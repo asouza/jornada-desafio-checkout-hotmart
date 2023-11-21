@@ -67,6 +67,29 @@ public class NovaContaControllerTest {
     }
 
     @Test
+    public void naoDeveCriarContaComEmailDuplicado() throws Exception{
+        Configuracao configuracaoDefault = new Configuracao(BigDecimal.TEN, BigDecimal.ONE, true);
+        when(configuracaoRepository.findByOpcaoDefaultIsTrue()).thenReturn(Optional.of(configuracaoDefault));
+
+        Map<String,String> request = Map.of("email","alberto@deveficiente.com");        
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/contas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(JSONFromMap.execute(request)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        verify(contaRepository, times(1)).save(new Conta("alberto@deveficiente.com",configuracaoDefault));
+
+        //agora tenta cadastrar de novo
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/contas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(JSONFromMap.execute(request)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());        
+        
+    }
+
+    @Test
     public void naoDeveCriarNovaContaSeConfiguracaoDefaultNaoExistir() throws Exception {
         when(configuracaoRepository.findByOpcaoDefaultIsTrue()).thenReturn(Optional.empty());
 
