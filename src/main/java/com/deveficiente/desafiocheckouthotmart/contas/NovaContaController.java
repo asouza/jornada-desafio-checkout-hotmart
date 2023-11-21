@@ -1,5 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.contas;
 
+import java.util.UUID;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +26,7 @@ public class NovaContaController {
 
     @PostMapping("/contas")
     @Transactional
-    public void cria(@RequestBody @Valid NovaContaRequest request) {
+    public UUID cria(@RequestBody @Valid NovaContaRequest request) {
         Configuracao configuracaoDefault = configuracaoRepository.findByOpcaoDefaultIsTrue()
             .orElseThrow(() -> new ResponseStatusException(
                 org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
@@ -33,5 +35,7 @@ public class NovaContaController {
 
         Conta conta = request.toModel(configuracaoDefault);
         contaRepository.save(conta);
+        
+        return conta.getCodigo();
     }
 }

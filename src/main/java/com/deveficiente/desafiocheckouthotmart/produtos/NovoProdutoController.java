@@ -1,0 +1,56 @@
+package com.deveficiente.desafiocheckouthotmart.produtos;
+
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Resultado;
+import com.deveficiente.desafiocheckouthotmart.contas.Conta;
+import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
+import com.deveficiente.desafiocheckouthotmart.contas.JaExisteProdutoComMesmoNomeException;
+
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+
+@RestController
+public class NovoProdutoController {
+    
+    private ContaRepository contaRepository;
+
+    public NovoProdutoController(ContaRepository contaRepository) {
+        this.contaRepository = contaRepository;
+    }
+
+    @PostMapping("/contas/{codigoConta}/produtos")
+    @Transactional
+    public void criar(@PathVariable("codigoConta") String codigoConta , @RequestBody @Valid NovoProdutoRequest request) throws BindException {
+        Conta conta = contaRepository.findByCodigo(UUID.fromString(codigoConta))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta não encontrada"));
+
+        Resultado<RuntimeException, Produto> resultado = conta.adicionaProduto(request :: toModel);
+        
+        //#naoSeiPq aqui ele precisa que salve para de fato aplicar o cascade.
+        //contaRepository.save(conta);
+        
+        //#possivelResposta Configurando o cascade como persist foi. Então alteração de estado no objeto dentro de uma transacao triga o persist?
+
+        
+        //transforma para saida http
+        if(resultado.temErro()) {
+            if(resultado.getProblema() instanceof JaExisteProdutoComMesmoNomeException) {
+            	BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "novoProdutoRequest");
+            	bindingResult.reject(null, "Já existe um produto com mesmo nome para esta conta");        	
+    			throw new BindException(bindingResult);
+            }        	
+        }               
+
+    }
+}
