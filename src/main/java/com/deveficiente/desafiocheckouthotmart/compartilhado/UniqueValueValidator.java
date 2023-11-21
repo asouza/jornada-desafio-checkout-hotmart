@@ -2,7 +2,6 @@ package com.deveficiente.desafiocheckouthotmart.compartilhado;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import jakarta.persistence.EntityManager;
@@ -15,8 +14,12 @@ public class UniqueValueValidator implements ConstraintValidator<UniqueValue, Ob
 
     private String domainAttribute;
     private Class<?> klass;
-    @Autowired
     private EntityManager manager;
+
+
+    public UniqueValueValidator(EntityManager manager) {
+        this.manager = manager;
+    }
 
     @Override
     public void initialize(UniqueValue params) {
