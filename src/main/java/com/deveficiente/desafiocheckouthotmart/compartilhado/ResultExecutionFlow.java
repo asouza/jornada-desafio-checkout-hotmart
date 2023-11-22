@@ -30,10 +30,11 @@ public class ResultExecutionFlow<FinalTypeReturn,ProblemType> {
 		return new ResultExecutionFlow<TipoRetornoFinal,TipoProblema>(null,retornoProblema);
 	}
 
-	public ResultExecutionFlow<FinalTypeReturn,ProblemType> throwsEarlyIf(Class<?> classeProblema,
-			Function<ProblemType, ? extends Exception> funcao) throws Exception {
+	@SuppressWarnings("unchecked")
+	public <ExceptionType> ResultExecutionFlow<FinalTypeReturn,ProblemType> throwsEarlyIf(Class<ExceptionType> classeProblema,
+			Function<ExceptionType, ? extends Exception> funcao) throws Exception {
 		if(problemReturn != null && problemReturn.getClass().equals(classeProblema)) {
-			throw funcao.apply(this.problemReturn);
+			throw funcao.apply((ExceptionType)this.problemReturn);
 		}
 		
 		return this;

@@ -13,5 +13,9 @@ public class JaExisteProdutoComMesmoNomeException extends RuntimeException {
 	public JaExisteProdutoComMesmoNomeException(Produto produto) {
 		this.produto = produto;
 	}
+
+	public Produto getProduto() {
+		return this.produto;
+	}
 	
 }

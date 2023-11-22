@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.BindExceptionFactory;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
@@ -48,13 +49,9 @@ public class NovoProdutoController {
         	.ifSuccess(produto -> {
         		return ResponseEntity.ok(produto.getNome());
         	})
-//        	.ifProblem(JaExisteProdutoComMesmoNomeException.class, erro -> {
-//        		return ResponseEntity.badRequest().build();
-//        	})
         	.throwsEarlyIf(JaExisteProdutoComMesmoNomeException.class, erro -> {
-            	BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "novoProdutoRequest");
-            	bindingResult.reject(null, "Já existe um produto com mesmo nome para esta conta");        	
-    			return new BindException(bindingResult);        		
+            	return BindExceptionFactory.createGlobalError(request, "novoProdutoRequest"
+            			,"Já existe um produto com mesmo nome para esta conta. "+erro.getProduto().getNome());
         	})
         	.execute();
 
