@@ -5,36 +5,53 @@ import java.util.function.Function;
 
 import org.springframework.util.Assert;
 
-public class FluxoExecucaoResultado<TipoSucesso,TipoProblema> {
+/**
+ * Used with {@link Result}
+ * @author albertoluizsouza
+ *
+ * @param <FinalTypeReturn>
+ * @param <ProblemType>
+ */
+public class ResultExecutionFlow<FinalTypeReturn,ProblemType> {
 
-	private TipoSucesso retornoSucesso;
-	private TipoProblema retornoProblema;
+	private FinalTypeReturn finalReturn;
+	private ProblemType problemReturn;
 
-	public FluxoExecucaoResultado(TipoSucesso retornoSucesso, TipoProblema retornoProblema) {
-		this.retornoSucesso = retornoSucesso;
-		this.retornoProblema = retornoProblema;
+	public ResultExecutionFlow(FinalTypeReturn retornoSucesso, ProblemType retornoProblema) {
+		this.finalReturn = retornoSucesso;
+		this.problemReturn = retornoProblema;
 	}
 
-	public static <TipoSucesso,TipoProblema> FluxoExecucaoResultado<TipoSucesso,TipoProblema> sucesso(TipoSucesso retornoSucesso) {
-		return new FluxoExecucaoResultado<TipoSucesso,TipoProblema>(retornoSucesso,null);
+	public static <TipoRetornoFinal,TipoProblema> ResultExecutionFlow<TipoRetornoFinal,TipoProblema> success(TipoRetornoFinal retornoSucesso) {
+		return new ResultExecutionFlow<TipoRetornoFinal,TipoProblema>(retornoSucesso,null);
 	}
 	
-	public static <TipoSucesso,TipoProblema> FluxoExecucaoResultado<TipoSucesso,TipoProblema> problema(TipoProblema retornoProblema) {
-		return new FluxoExecucaoResultado<TipoSucesso,TipoProblema>(null,retornoProblema);
+	public static <TipoRetornoFinal,TipoProblema> ResultExecutionFlow<TipoRetornoFinal,TipoProblema> problem(TipoProblema retornoProblema) {
+		return new ResultExecutionFlow<TipoRetornoFinal,TipoProblema>(null,retornoProblema);
 	}
 
-	public FluxoExecucaoResultado<TipoSucesso,TipoProblema> throwsIf(Class<?> classeProblema,
-			Function<TipoProblema, ? extends Exception> funcao) throws Exception {
-		if(retornoProblema != null && retornoProblema.getClass().equals(classeProblema)) {
-			throw funcao.apply(this.retornoProblema);
+	public ResultExecutionFlow<FinalTypeReturn,ProblemType> throwsEarlyIf(Class<?> classeProblema,
+			Function<ProblemType, ? extends Exception> funcao) throws Exception {
+		if(problemReturn != null && problemReturn.getClass().equals(classeProblema)) {
+			throw funcao.apply(this.problemReturn);
 		}
 		
 		return this;
 	}
 
-	public TipoSucesso executa() {
-		Assert.isTrue(Objects.nonNull(this.retornoSucesso), "Neste momento a execucao final só deve acontecer quando tem um retorno de sucesso");
-		return this.retornoSucesso;
+	public FinalTypeReturn execute() {
+		Assert.isTrue(Objects.nonNull(this.finalReturn), "Na hora que executa precisa de um retorno final setado ou uma exception precisa ser lançada no caminho. Chegou a invocar o método throwsIf ou ifProblem");
+		return this.finalReturn;
+	}
+
+	public ResultExecutionFlow<FinalTypeReturn,ProblemType> ifProblem(
+			Class<?> classeProblema, Function<ProblemType, FinalTypeReturn> funcao) {
+		
+		if(problemReturn != null) {
+			Assert.isTrue(Objects.isNull(this.finalReturn), "O retorno final não deveria estar setado ainda. "+this.finalReturn);
+			this.finalReturn = funcao.apply(this.problemReturn);
+		}
+		return this;
 	}	
 
 }

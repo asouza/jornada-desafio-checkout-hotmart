@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import com.deveficiente.desafiocheckouthotmart.compartilhado.Resultado;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
@@ -73,20 +73,20 @@ public class Conta {
     /**
      * 
      * @param funcaoCriadoraDeProduto
-     * @return {@link Resultado} de sucesso com o produto adicionado ou as seguintes possibilidades de problema:
+     * @return {@link Result} de sucesso com o produto adicionado ou as seguintes possibilidades de problema:
      * <ul>
      * 	<li>{@link JaExisteProdutoComMesmoNomeException}</li>
      * </ul>
      */
-    public Resultado<RuntimeException, Produto> adicionaProduto(Function<Conta,Produto> funcaoCriadoraDeProduto) {
+    public Result<RuntimeException, Produto> adicionaProduto(Function<Conta,Produto> funcaoCriadoraDeProduto) {
         Produto novoProduto = funcaoCriadoraDeProduto.apply(this);
 		boolean adicionou = this.produtos.add(novoProduto);
 		
 		
         if(adicionou) {
-        	return Resultado.sucessoComInfoAdicional(novoProduto);
+        	return Result.successWithReturn(novoProduto);
         }
-        return Resultado.falhaCom(new JaExisteProdutoComMesmoNomeException(novoProduto));
+        return Result.failWithProblem(new JaExisteProdutoComMesmoNomeException(novoProduto));
     }
 
 	public UUID getCodigo() {

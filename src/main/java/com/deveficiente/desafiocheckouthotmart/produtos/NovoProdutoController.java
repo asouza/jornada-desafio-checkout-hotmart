@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.deveficiente.desafiocheckouthotmart.compartilhado.Resultado;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
 import com.deveficiente.desafiocheckouthotmart.contas.JaExisteProdutoComMesmoNomeException;
@@ -36,7 +36,7 @@ public class NovoProdutoController {
         Conta conta = contaRepository.findByCodigo(UUID.fromString(codigoConta))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta não encontrada"));
 
-        Resultado<RuntimeException, Produto> resultado = conta.adicionaProduto(request :: toModel);
+        Result<RuntimeException, Produto> resultado = conta.adicionaProduto(request :: toModel);
         
         //#naoSeiPq aqui ele precisa que salve para de fato aplicar o cascade.
         //contaRepository.save(conta);
@@ -45,15 +45,18 @@ public class NovoProdutoController {
 
        
         return resultado
-        	.seSucesso(produto -> {
+        	.ifSuccess(produto -> {
         		return ResponseEntity.ok(produto.getNome());
         	})
-        	.throwsIf(JaExisteProdutoComMesmoNomeException.class, erro -> {
+//        	.ifProblem(JaExisteProdutoComMesmoNomeException.class, erro -> {
+//        		return ResponseEntity.badRequest().build();
+//        	})
+        	.throwsEarlyIf(JaExisteProdutoComMesmoNomeException.class, erro -> {
             	BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "novoProdutoRequest");
             	bindingResult.reject(null, "Já existe um produto com mesmo nome para esta conta");        	
     			return new BindException(bindingResult);        		
         	})
-        	.executa();
+        	.execute();
 
     }
 }

@@ -4,55 +4,55 @@ import java.util.function.Function;
 
 import org.springframework.util.Assert;
 
-public class Resultado<TipoProblema extends RuntimeException, TipoSucesso> {
+public class Result<ProblemType extends RuntimeException, SuccessType> {
 
-    private boolean sucesso;
-    private TipoProblema problema;
-    private TipoSucesso retorno;
+    private boolean isSuccess;
+    private ProblemType problem;
+    private SuccessType successReturnObject;
     
-    private Resultado(TipoSucesso retorno) {
-		this.retorno = retorno;
-		this.sucesso = true;
+    private Result(SuccessType successReturnObject) {
+		this.successReturnObject = successReturnObject;
+		this.isSuccess = true;
     }    
 
-    private Resultado(boolean sucesso) {
-        this.sucesso = sucesso;
+    private Result(boolean success) {
+        this.isSuccess = success;
     }
 
-    private Resultado(TipoProblema problema) {
-        this.problema = problema;
+    private Result(ProblemType problem) {
+        this.problem = problem;
     }
 
-    public static Resultado<RuntimeException, Void> sucessoSemInfoAdicional() {
-        return new Resultado<RuntimeException,Void>(true);
+    public static Result<RuntimeException, Void> emptySuccess() {
+        return new Result<RuntimeException,Void>(true);
     }
 
-    public static <TipoProblema extends RuntimeException,TipoRetorno> Resultado<TipoProblema, TipoRetorno> falhaCom(TipoProblema problema) {
-        return new Resultado<TipoProblema,TipoRetorno>(problema);
+    public static <TipoProblema extends RuntimeException,TipoRetorno> Result<TipoProblema, TipoRetorno> failWithProblem(TipoProblema problema) {
+        return new Result<TipoProblema,TipoRetorno>(problema);
     }
 
-	public boolean temErro() {
-		return !this.sucesso;
+	public boolean hasError() {
+		return !this.isSuccess;
 	}
 
-	public RuntimeException getProblema() {
-		Assert.isTrue(!sucesso, "Só pode buscar o problema se tiver erro");
-		return this.problema;
+	public RuntimeException getProblem() {
+		Assert.isTrue(!isSuccess, "Só pode buscar o problema se tiver erro");
+		return this.problem;
 	}
 
-	public boolean isSucesso() {
-		return this.sucesso;
+	public boolean isSuccess() {
+		return this.isSuccess;
 	}
 
-	public static <T> Resultado<RuntimeException,T> sucessoComInfoAdicional(T retorno) {
-		return new Resultado<RuntimeException,T>(retorno);
+	public static <T> Result<RuntimeException,T> successWithReturn(T successReturn) {
+		return new Result<RuntimeException,T>(successReturn);
 	}
 
-	public <T> FluxoExecucaoResultado<T,TipoProblema> seSucesso(Function<TipoSucesso, T> funcao) {
-		if(isSucesso()) {
-			return FluxoExecucaoResultado.sucesso(funcao.apply(this.retorno));
+	public <T> ResultExecutionFlow<T,ProblemType> ifSuccess(Function<SuccessType, T> funcao) {
+		if(isSuccess()) {
+			return ResultExecutionFlow.success(funcao.apply(this.successReturnObject));
 		}
-		return FluxoExecucaoResultado.problema(this.problema);
+		return ResultExecutionFlow.problem(this.problem);
 	}
 
 
