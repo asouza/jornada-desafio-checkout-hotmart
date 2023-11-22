@@ -1,8 +1,8 @@
 package com.deveficiente.desafiocheckouthotmart.compartilhado;
 
-import org.springframework.util.Assert;
+import java.util.function.Function;
 
-import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
+import org.springframework.util.Assert;
 
 public class Resultado<TipoProblema extends RuntimeException, TipoSucesso> {
 
@@ -24,7 +24,7 @@ public class Resultado<TipoProblema extends RuntimeException, TipoSucesso> {
     }
 
     public static Resultado<RuntimeException, Void> sucessoSemInfoAdicional() {
-        return new Resultado(true);
+        return new Resultado<RuntimeException,Void>(true);
     }
 
     public static <TipoProblema extends RuntimeException,TipoRetorno> Resultado<TipoProblema, TipoRetorno> falhaCom(TipoProblema problema) {
@@ -46,6 +46,13 @@ public class Resultado<TipoProblema extends RuntimeException, TipoSucesso> {
 
 	public static <T> Resultado<RuntimeException,T> sucessoComInfoAdicional(T retorno) {
 		return new Resultado<RuntimeException,T>(retorno);
+	}
+
+	public <T> FluxoExecucaoResultado<T,TipoProblema> seSucesso(Function<TipoSucesso, T> funcao) {
+		if(isSucesso()) {
+			return FluxoExecucaoResultado.sucesso(funcao.apply(this.retorno));
+		}
+		return FluxoExecucaoResultado.problema(this.problema);
 	}
 
 

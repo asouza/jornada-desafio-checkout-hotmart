@@ -73,7 +73,10 @@ public class Conta {
     /**
      * 
      * @param funcaoCriadoraDeProduto
-     * @return novo {@link Produto} adicionado na conta
+     * @return {@link Resultado} de sucesso com o produto adicionado ou as seguintes possibilidades de problema:
+     * <ul>
+     * 	<li>{@link JaExisteProdutoComMesmoNomeException}</li>
+     * </ul>
      */
     public Resultado<RuntimeException, Produto> adicionaProduto(Function<Conta,Produto> funcaoCriadoraDeProduto) {
         Produto novoProduto = funcaoCriadoraDeProduto.apply(this);

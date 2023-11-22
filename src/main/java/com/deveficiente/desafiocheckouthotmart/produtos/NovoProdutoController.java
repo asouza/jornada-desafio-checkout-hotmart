@@ -3,6 +3,7 @@ package com.deveficiente.desafiocheckouthotmart.produtos;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
@@ -31,7 +32,7 @@ public class NovoProdutoController {
 
     @PostMapping("/contas/{codigoConta}/produtos")
     @Transactional
-    public void criar(@PathVariable("codigoConta") String codigoConta , @RequestBody @Valid NovoProdutoRequest request) throws BindException {
+    public ResponseEntity<String> criar(@PathVariable("codigoConta") String codigoConta , @RequestBody @Valid NovoProdutoRequest request) throws Exception {
         Conta conta = contaRepository.findByCodigo(UUID.fromString(codigoConta))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta não encontrada"));
 
@@ -42,15 +43,17 @@ public class NovoProdutoController {
         
         //#possivelResposta Configurando o cascade como persist foi. Então alteração de estado no objeto dentro de uma transacao triga o persist?
 
-        
-        //transforma para saida http
-        if(resultado.temErro()) {
-            if(resultado.getProblema() instanceof JaExisteProdutoComMesmoNomeException) {
+       
+        return resultado
+        	.seSucesso(produto -> {
+        		return ResponseEntity.ok(produto.getNome());
+        	})
+        	.throwsIf(JaExisteProdutoComMesmoNomeException.class, erro -> {
             	BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(request, "novoProdutoRequest");
             	bindingResult.reject(null, "Já existe um produto com mesmo nome para esta conta");        	
-    			throw new BindException(bindingResult);
-            }        	
-        }               
+    			return new BindException(bindingResult);        		
+        	})
+        	.executa();
 
     }
 }
