@@ -22,6 +22,7 @@ import com.deveficiente.desafiocheckouthotmart.contas.JaExisteProdutoComMesmoNom
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
+//TODO tests
 @RestController
 public class NovoProdutoController {
     
