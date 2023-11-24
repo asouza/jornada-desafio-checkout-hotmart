@@ -48,7 +48,7 @@ public class NovoProdutoController {
        
         return resultado
         	.ifSuccess(produto -> {
-        		return ResponseEntity.ok(produto.getNome());
+        		return ResponseEntity.ok(produto.getCodigo().toString());
         	})
         	.throwsEarlyIf(JaExisteProdutoComMesmoNomeException.class, erro -> {
             	return BindExceptionFactory.createGlobalError(request, "novoProdutoRequest"
