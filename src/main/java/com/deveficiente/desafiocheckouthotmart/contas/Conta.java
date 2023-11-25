@@ -94,6 +94,10 @@ public class Conta {
 		return codigo;
 	}
 
+	public Configuracao getConfiguracao() {
+		return this.configuracao;
+	}
+
     
 
 }

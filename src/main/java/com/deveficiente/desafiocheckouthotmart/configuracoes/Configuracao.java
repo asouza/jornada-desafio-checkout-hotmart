@@ -41,4 +41,8 @@ public class Configuracao {
                 this.opcaoDefault = opcaoDefault;
     }
 
+	public BigDecimal getTaxaJuros() {
+		return this.taxaJuros;
+	}
+
 }

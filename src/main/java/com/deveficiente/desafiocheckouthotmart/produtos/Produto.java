@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.produtos;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -10,8 +11,8 @@ import java.util.stream.Collectors;
 import org.springframework.util.Assert;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
+import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.contas.JaExisteProdutoComMesmoNomeException;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.persistence.CascadeType;
@@ -37,7 +38,7 @@ public class Produto {
 	private Conta conta;
 	@NotNull
 	private UUID codigo;
-	@OneToMany(mappedBy = "produto",cascade = CascadeType.PERSIST)
+	@OneToMany(mappedBy = "produto", cascade = CascadeType.PERSIST)
 	private Set<Oferta> ofertas = new HashSet<>();
 
 	@Deprecated
@@ -93,17 +94,18 @@ public class Produto {
 		return "Produto [nome=" + nome + "]";
 	}
 
-	//TODO tests
+	// TODO tests
 	public Result<RuntimeException, Oferta> adicionaOferta(
 			Function<Produto, Oferta> funcaoCriadoraOferta) {
-		
+
 		Oferta novaOferta = funcaoCriadoraOferta.apply(this);
 		boolean adicionou = this.ofertas.add(novaOferta);
-		
-        if(adicionou) {
-        	return Result.successWithReturn(novaOferta);
-        }
-        return Result.failWithProblem(new JaExisteOfertaComMesmoNomeException(novaOferta));				
+
+		if (adicionou) {
+			return Result.successWithReturn(novaOferta);
+		}
+		return Result.failWithProblem(
+				new JaExisteOfertaComMesmoNomeException(novaOferta));
 	}
 
 	/**
@@ -111,27 +113,70 @@ public class Produto {
 	 * @param ofertaAlvo
 	 * @return se conseguiu definir como principal
 	 */
-	//TODO tests
+	// TODO tests
 	public boolean tentaDefinirOfertaComoPrincipal(Oferta ofertaAlvo) {
-		boolean naoExistePrincipal = this.ofertas.stream().noneMatch(Oferta :: isPrincipal);
-		
-		if(naoExistePrincipal) {
-			//deve ter uma oferta só
-			List<Oferta> ofertasEncontradas = this
-				.ofertas
-				.stream()
-				.filter(oferta -> oferta.equals(ofertaAlvo))
-				.collect(Collectors.toList());
-			
-			Assert.isTrue(ofertasEncontradas.size() == 1, "Como não tem oferta principal ainda, a oferta parametro deveria existir na colecao de ofertas do produto");
+		boolean naoExistePrincipal = this.ofertas.stream()
+				.noneMatch(Oferta::isPrincipal);
+
+		if (naoExistePrincipal) {
+			// deve ter uma oferta só
+			List<Oferta> ofertasEncontradas = this.ofertas.stream()
+					.filter(oferta -> oferta.equals(ofertaAlvo))
+					.collect(Collectors.toList());
+
+			Assert.isTrue(ofertasEncontradas.size() == 1,
+					"Como não tem oferta principal ainda, a oferta parametro deveria existir na colecao de ofertas do produto");
 			ofertasEncontradas.get(0).defineComoPrincipal();
 		}
-		
+
 		return naoExistePrincipal;
 	}
 
 	public UUID getCodigo() {
 		return codigo;
+	}
+
+	/**
+	 * 
+	 * @param codigo
+	 * @return Oferta ou os possíveis problemas:
+	 * <ul>
+	 * 	<li>{@link OfertaInexistenteException}</li>
+	 * </ul> 
+	 *
+	 * 
+	 */
+	public Optional<Oferta> buscaOferta(
+			UUID codigo) {
+
+		List<Oferta> ofertas = this.ofertas
+				.stream()
+				.filter(oferta -> oferta.temMesmoCodigo(codigo))
+				.toList();
+		
+		Assert.isTrue(ofertas.size() <= 1, "Deveria haver no máximo uma oferta com o código "+codigo);
+		
+		//#hack aqui evita a gente fazer o if na mão. A gente já sabe que tem uma ou zero.
+		return ofertas.stream().findFirst();
+		
+	}
+
+	public Oferta getOfertaPrincipal() {
+		List<Oferta> ofertas = this.ofertas
+				.stream()
+				.filter(oferta -> oferta.isPrincipal())
+				.toList();
+		
+		Assert.isTrue(ofertas.size() == 1, "Deveria haver UMA oferta como principal para o produto "+this.codigo);
+		
+		return ofertas.get(0);
+		
+	}
+
+	public Configuracao getConfiguracao() {
+		//não era necessário delegar tanto, a parte ruim é que o de fora
+		//ia conhecer muito o de dentro... Pode atrapalhar refatoracao etc.
+		return this.conta.getConfiguracao();
 	}
 
 }

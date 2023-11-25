@@ -2,8 +2,12 @@ package com.deveficiente.desafiocheckouthotmart.ofertas;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+import org.springframework.util.Assert;
+
+import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
 import jakarta.persistence.Entity;
@@ -36,24 +40,25 @@ public class Oferta {
 	private LocalDateTime instanteCriacao = LocalDateTime.now();
 	@NotNull
 	private UUID codigo = UUID.randomUUID();
-	
-	//TODO refactor aqui será que não é melhor ter uma lista trackear?
+
+	// TODO refactor aqui será que não é melhor ter uma lista trackear?
 	private boolean ativa = true;
 	private boolean principal = false;
-	
+
 	@Deprecated
 	public Oferta() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Oferta(Produto produto, @NotBlank String nome, @NotNull @Positive BigDecimal preco,
+	public Oferta(Produto produto, @NotBlank String nome,
+			@NotNull @Positive BigDecimal preco,
 			@NotNull @Min(1) @Max(12) Integer numeroMaximoParcelas,
 			@NotNull QuemPagaJuros quemPagaJuros) {
-				this.produto = produto;
-				this.nome = nome;
-				this.preco = preco;
-				this.numeroMaximoParcelas = numeroMaximoParcelas;
-				this.quemPagaJuros = quemPagaJuros;
+		this.produto = produto;
+		this.nome = nome;
+		this.preco = preco;
+		this.numeroMaximoParcelas = numeroMaximoParcelas;
+		this.quemPagaJuros = quemPagaJuros;
 	}
 
 	@Override
@@ -90,7 +95,7 @@ public class Oferta {
 	public String getNome() {
 		return nome;
 	}
-	
+
 	public boolean isPrincipal() {
 		return this.principal;
 	}
@@ -98,6 +103,35 @@ public class Oferta {
 	public void defineComoPrincipal() {
 		this.principal = true;
 	}
-	
+
+	public boolean temMesmoCodigo(UUID codigo) {
+		return this.codigo.equals(codigo);
+	}
+
+	public BigDecimal getPreco() {
+		return this.preco;
+	}
+
+	public Produto getProduto() {
+		return this.produto;
+	}
+
+	public List<ValorParcelaMes> calculaParcelas(
+			@Min(1) int numeroMaximoParcelas) {
+		Assert.isTrue(numeroMaximoParcelas >= 1,
+				"O número de parcelas precisar ser maior ou igual a 1");
+		// aqui eu decidi parametrizar o numero máximo de parcelas em vez de
+		// retornar sempre até 12.
+		// acho que é um custo de complexidade ok a generalização.
+
+		/*
+		 * #paraBlogar se o calculo for feito, vai precisar do if.. Se delegar
+		 * para a enum, não precisa.
+		 */
+
+		return this.quemPagaJuros.calculaParcelas(this.preco,
+				this.produto.getConfiguracao().getTaxaJuros(),
+				numeroMaximoParcelas);
+	}
 
 }
