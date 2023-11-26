@@ -10,6 +10,7 @@ import org.springframework.util.Assert;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -44,6 +45,8 @@ public class Oferta {
 	// TODO refactor aqui será que não é melhor ter uma lista trackear?
 	private boolean ativa = true;
 	private boolean principal = false;
+	@ElementCollection
+	private List<ValorParcelaMes> valoresParcelas;
 
 	@Deprecated
 	public Oferta() {
@@ -59,6 +62,12 @@ public class Oferta {
 		this.preco = preco;
 		this.numeroMaximoParcelas = numeroMaximoParcelas;
 		this.quemPagaJuros = quemPagaJuros;
+		/*
+		 * #paraBlogar se o calculo for feito, vai precisar do if.. Se delegar
+		 * para a enum, não precisa.
+		 */
+
+		this.valoresParcelas = this.quemPagaJuros.calculaParcelasParaCliente(this.preco, this.produto.getConfiguracao().getTaxaJuros(), this.numeroMaximoParcelas);
 	}
 
 	@Override
@@ -116,19 +125,8 @@ public class Oferta {
 		return this.produto;
 	}
 
-	public List<ValorParcelaMes> calculaParcelas() {
-		// aqui eu decidi parametrizar o numero máximo de parcelas em vez de
-		// retornar sempre até 12.
-		// acho que é um custo de complexidade ok a generalização.
-
-		/*
-		 * #paraBlogar se o calculo for feito, vai precisar do if.. Se delegar
-		 * para a enum, não precisa.
-		 */
-
-		return this.quemPagaJuros.calculaParcelasParaCliente(this.preco,
-				this.produto.getConfiguracao().getTaxaJuros(),
-				this.numeroMaximoParcelas);
+	public List<ValorParcelaMes> getParcelaMes() {
+		return this.valoresParcelas;
 	}
 
 }
