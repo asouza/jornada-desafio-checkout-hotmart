@@ -26,17 +26,13 @@ public enum QuemPagaJuros {
 			ArrayList<ValorParcelaMes> parcelas = new ArrayList<>();
 			parcelas.add(new ValorParcelaMes(preco, 1));
 			
-			System.out.println(numeroMaximoParcelas+"====");
-			
 			for(int n = 2; n <= numeroMaximoParcelas; n++ ) {
 				BigDecimal taxaPercentualTotal = taxaJurosAoMes
 							.multiply(new BigDecimal(n))
 							.divide(new BigDecimal("100"))
 							.add(BigDecimal.ONE);
-				
-				System.out.println("Taxa total ="+taxaPercentualTotal);
-				
-				System.out.println(preco + "/" + new BigDecimal(n));				
+
+				//o arredondamento poderia vir via parametro
 				BigDecimal valorPorMesSemJuros = preco.divide(new BigDecimal(n),3,RoundingMode.HALF_EVEN);
 				BigDecimal valorPorMesComJuros = valorPorMesSemJuros.multiply(taxaPercentualTotal);
 				parcelas.add(new ValorParcelaMes(valorPorMesComJuros, n));

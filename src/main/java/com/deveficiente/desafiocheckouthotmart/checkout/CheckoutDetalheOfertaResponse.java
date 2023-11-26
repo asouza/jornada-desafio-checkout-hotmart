@@ -15,7 +15,7 @@ public class CheckoutDetalheOfertaResponse {
 		this.precoAVista = oferta.getPreco();
 		this.nomeProduto = oferta.getProduto().getNome();
 
-		this.descricaoParcelas = oferta.calculaParcelas(12)
+		this.descricaoParcelas = oferta.calculaParcelas()
 			.stream()
 			.map(ValorParcelaMesResponse :: new)
 			.toList();

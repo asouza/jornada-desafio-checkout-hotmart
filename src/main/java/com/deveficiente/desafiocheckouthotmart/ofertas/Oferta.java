@@ -116,10 +116,7 @@ public class Oferta {
 		return this.produto;
 	}
 
-	public List<ValorParcelaMes> calculaParcelas(
-			@Min(1) int numeroMaximoParcelas) {
-		Assert.isTrue(numeroMaximoParcelas >= 1,
-				"O número de parcelas precisar ser maior ou igual a 1");
+	public List<ValorParcelaMes> calculaParcelas() {
 		// aqui eu decidi parametrizar o numero máximo de parcelas em vez de
 		// retornar sempre até 12.
 		// acho que é um custo de complexidade ok a generalização.
@@ -131,7 +128,7 @@ public class Oferta {
 
 		return this.quemPagaJuros.calculaParcelas(this.preco,
 				this.produto.getConfiguracao().getTaxaJuros(),
-				numeroMaximoParcelas);
+				this.numeroMaximoParcelas);
 	}
 
 }
