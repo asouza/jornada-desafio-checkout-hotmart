@@ -17,7 +17,7 @@ public enum QuemPagaJuros {
 
 	cliente {
 		@Override
-		List<ValorParcelaMes> calculaParcelas(
+		List<ValorParcelaMes> calculaParcelasParaCliente(
 				@NotNull @Positive BigDecimal preco, BigDecimal taxaJurosAoMes,
 				@Min(1) int numeroMaximoParcelas) {
 			Assert.isTrue(numeroMaximoParcelas >= 1,
@@ -41,12 +41,20 @@ public enum QuemPagaJuros {
 		}
 	},vendedor {
 		@Override
-		List<ValorParcelaMes> calculaParcelas(
+		List<ValorParcelaMes> calculaParcelasParaCliente(
 				@NotNull @Positive BigDecimal preco, BigDecimal taxaJuros,
 				@Min(1) int numeroMaximoParcelas) {
-			// TODO Auto-generated method stub
-			return null;
-		}
+			Assert.isTrue(numeroMaximoParcelas >= 1,
+					"O número de parcelas precisar ser maior ou igual a 1");
+									
+			ArrayList<ValorParcelaMes> parcelas = new ArrayList<>();
+			parcelas.add(new ValorParcelaMes(preco, 1));
+			
+			for(int n = 2; n <= numeroMaximoParcelas; n++ ) {
+				BigDecimal valorPorMesSemJuros = preco.divide(new BigDecimal(n),3,RoundingMode.HALF_EVEN);
+				parcelas.add(new ValorParcelaMes(valorPorMesSemJuros, n));
+			}
+			return parcelas;		}
 	};
 
 	/**
@@ -56,6 +64,6 @@ public enum QuemPagaJuros {
 	 * @param numeroMaximoParcelas
 	 * @return
 	 */
-	abstract List<ValorParcelaMes> calculaParcelas(@NotNull @Positive BigDecimal preco,
+	abstract List<ValorParcelaMes> calculaParcelasParaCliente(@NotNull @Positive BigDecimal preco,
 			BigDecimal taxaJurosAoMes, @Min(1) int numeroMaximoParcelas);
 }

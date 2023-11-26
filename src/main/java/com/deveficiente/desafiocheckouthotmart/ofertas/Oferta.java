@@ -126,7 +126,7 @@ public class Oferta {
 		 * para a enum, não precisa.
 		 */
 
-		return this.quemPagaJuros.calculaParcelas(this.preco,
+		return this.quemPagaJuros.calculaParcelasParaCliente(this.preco,
 				this.produto.getConfiguracao().getTaxaJuros(),
 				this.numeroMaximoParcelas);
 	}
