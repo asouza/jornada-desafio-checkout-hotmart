@@ -68,7 +68,9 @@ public class Oferta {
 		 * para a enum, não precisa.
 		 */
 
-		this.valoresParcelas = this.quemPagaJuros.calculaParcelasParaCliente(this.preco, this.produto.getConfiguracao().getTaxaJuros(), this.numeroMaximoParcelas);
+		this.valoresParcelas = this.quemPagaJuros.calculaParcelasParaCliente(
+				this.preco, this.produto.getConfiguracao().getTaxaJuros(),
+				this.numeroMaximoParcelas);
 	}
 
 	@Override
@@ -128,6 +130,26 @@ public class Oferta {
 
 	public List<ValorParcelaMes> getParcelaMes() {
 		return this.valoresParcelas;
+	}
+
+	/**
+	 * 
+	 * @param numeroParcelas
+	 * @return retorna a parcela exata para o numeroParcelas
+	 * @throws IllegalStateException caso não ache a parcela. Deveria achar
+	 */
+	public ValorParcelaMes getValorParcelaParaDeterminadoNumero(
+			@Positive @NotNull int numeroParcelas) {
+		Assert.isTrue(numeroParcelas > 0,
+				"Numero de parcelas precisa ser maior que zero");
+
+		List<ValorParcelaMes> resultado = this.valoresParcelas.stream()
+				.filter(parcela -> parcela.numeroVezesIgual(numeroParcelas))
+				.toList();
+		
+		Assert.state(resultado.size() == 1, "Deveria ter achado a parcela para o numero de vezes = "+numeroParcelas);
+		
+		return resultado.get(0);
 	}
 
 }

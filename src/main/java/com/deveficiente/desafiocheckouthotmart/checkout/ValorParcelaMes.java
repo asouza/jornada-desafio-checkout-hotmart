@@ -3,6 +3,8 @@ package com.deveficiente.desafiocheckouthotmart.checkout;
 import java.math.BigDecimal;
 
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 @Embeddable
 public class ValorParcelaMes {
@@ -55,6 +57,10 @@ public class ValorParcelaMes {
 		} else if (!valor.equals(other.valor))
 			return false;
 		return true;
+	}
+
+	public boolean numeroVezesIgual(@Positive @NotNull int numeroParcelasNecessario) {
+		return this.numeroParcelas == numeroParcelasNecessario;
 	}
 	
 	

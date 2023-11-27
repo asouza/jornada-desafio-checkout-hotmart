@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.CartaoGatewayClient;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
@@ -31,17 +33,20 @@ public class PagaComCartaoCreditoController {
 	private ProdutoRepository produtoRepository;
 	private ContaRepository contaRepository;
 	private ConfiguracaoRepository configuracaoRepository;
+	private CartaoGatewayClient cartaoGatewayClient;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
 
 	public PagaComCartaoCreditoController(ProdutoRepository produtoRepository,
 			ContaRepository contaRepository,
-			ConfiguracaoRepository configuracaoRepository) {
+			ConfiguracaoRepository configuracaoRepository,
+			CartaoGatewayClient cartaoGatewayClient) {
 		super();
 		this.produtoRepository = produtoRepository;
 		this.contaRepository = contaRepository;
 		this.configuracaoRepository = configuracaoRepository;
+		this.cartaoGatewayClient = cartaoGatewayClient;
 	}
 
 	@InitBinder
@@ -76,9 +81,6 @@ public class PagaComCartaoCreditoController {
 				produtoRepository.findByCodigo(UUID.fromString(codigoProduto)),
 				404, "Produto não encontrado");
 
-		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
-				.orElseGet(() -> produto.getOfertaPrincipal());
-
 		Optional<Conta> possivelConta = contaRepository
 				.findByEmail(request.getInfoPadrao().getEmail());
 
@@ -88,10 +90,10 @@ public class PagaComCartaoCreditoController {
 			Assert.notNull(configuracaoDefault,
 					"Deveria haver uma configuracao default criada");
 
-			Conta contaGravada = contaRepository.save(request.getInfoPadrao()
-					.novaConta(configuracaoDefault));
+			Conta contaGravada = contaRepository.save(
+					request.getInfoPadrao().novaConta(configuracaoDefault));
 			Log5WBuilder
-					//se pega o método automático aqui captura o lambda
+					// se pega o método automático aqui captura o lambda
 					.metodo("PagaComCartaoCreditoController#executa")
 					.oQueEstaAcontecendo(
 							"Novo pagamento: salvando uma nova conta")
@@ -101,13 +103,36 @@ public class PagaComCartaoCreditoController {
 
 			return contaGravada;
 		});
+		
+		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
+				.orElseGet(() -> produto.getOfertaPrincipal());
+
+		NovoPagamentoGatewayCartaoRequest requestGateway 
+			= request.toPagamentoGatewayCartaoRequest(oferta);
+		
+		Log5WBuilder
+			.metodo()
+			.oQueEstaAcontecendo("Vai processar o pagamento")
+			.adicionaInformacao("request", requestGateway.toString())
+			.info(log);
+		
+		String idTransacao = cartaoGatewayClient.executa(requestGateway);
+		
+		Log5WBuilder
+			.metodo()
+			.oQueEstaAcontecendo("Processou o pagamento")
+			.adicionaInformacao("request", idTransacao)
+			.adicionaInformacao("codigoConta", conta.getCodigo().toString())
+			.info(log);		
 
 		/*
-		 * - precisa verificar se já existe o usuário com o email - se não
-		 * existe conta, salva. - precisa processar o pagamento. Tem que mandar
-		 * o numero de parcelas e o valor por parcela - cria uma compra
-		 * associando o id de transacao - politica de retry? - grava a compra
-		 * associada com o id da transacao - manda email - realiza c
+		 * - precisa verificar se já existe o usuário com o email 
+		 * - se não existe conta, salva. 
+		 * - precisa processar o pagamento. 
+		 * - Tem que mandar o numero de parcelas e o valor por parcela 
+		 * - cria uma compra associando o id de transacao 
+		 * - politica de retry? - grava a compra
+		 * - associada com o id da transacao - manda email para as situacoes
 		 */
 
 	}
