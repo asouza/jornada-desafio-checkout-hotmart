@@ -2,6 +2,8 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
 import org.hibernate.validator.constraints.CreditCardNumber;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -16,8 +18,7 @@ public class DadosCartaoCreditoRequest {
 	@NotNull
 	private MesVencimentoCartao mes;
 	@Positive
-	// aqui pode valer criar uma annotation customizada para validar se está
-	// presente ou no futuro
+	@FutureOrPresentYear
 	private int anoVencimento;
 
 	public DadosCartaoCreditoRequest(
