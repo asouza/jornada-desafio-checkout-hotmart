@@ -1,8 +1,13 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.FieldsValueMatch;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+@FieldsValueMatch.List({
+	@FieldsValueMatch(field = "email",fieldMatch = "confirmacaoEmail")
+})
 public class InfoPadraoCheckoutRequest {
 
 	@NotBlank
