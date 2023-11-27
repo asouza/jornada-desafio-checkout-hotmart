@@ -8,4 +8,6 @@ public interface ConfiguracaoRepository extends JpaRepository<Configuracao, Long
 
     Optional<Configuracao> findByOpcaoDefaultIsTrue();
 
+	Configuracao getByOpcaoDefaultIsTrue();
+
 }

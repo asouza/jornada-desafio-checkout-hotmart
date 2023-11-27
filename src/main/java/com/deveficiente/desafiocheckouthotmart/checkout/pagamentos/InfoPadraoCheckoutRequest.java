@@ -1,6 +1,8 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FieldsValueMatch;
+import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
+import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -33,11 +35,19 @@ public class InfoPadraoCheckoutRequest {
 		this.codigoCupom = codigoCupom;
 	}
 
+	public String getEmail() {
+		return email;
+	}
+	
 	@Override
 	public String toString() {
 		return "InfoPadraoCheckoutRequest [nomeCompleto=" + nomeCompleto
 				+ ", email=" + email + ", confirmacaoEmail=" + confirmacaoEmail
 				+ ", codigoCupom=" + codigoCupom + "]";
+	}
+
+	public Conta novaConta(Configuracao configuracao) {
+		return new Conta(email, configuracao);
 	}
 	
 	

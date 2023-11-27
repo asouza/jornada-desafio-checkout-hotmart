@@ -25,7 +25,7 @@ public class NovaConfiguracaoController {
     @PostMapping("/configuracoes")
     @Transactional
     public void novaConfiguracao(@Valid @RequestBody NovaConfiguracaoRequest request) {
-        if(configuracaoRepository.findByOpcaoDefaultIsTrue().isPresent()) {
+        if(request.isOpcaoDefault() && configuracaoRepository.findByOpcaoDefaultIsTrue().isPresent()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,"Ja existe uma configuracao default");
         }
 

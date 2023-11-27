@@ -25,4 +25,7 @@ public class NovoCheckoutCartaoRequest {
 				+ ", dadosCartao=" + dadosCartao + "]";
 	}
 
+	public InfoPadraoCheckoutRequest getInfoPadrao() {
+		return infoPadrao;
+	}
 }
