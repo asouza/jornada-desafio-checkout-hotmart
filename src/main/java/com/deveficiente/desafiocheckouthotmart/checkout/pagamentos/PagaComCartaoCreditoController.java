@@ -13,8 +13,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
+import com.deveficiente.desafiocheckouthotmart.checkout.TransacaoCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.CartaoGatewayClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
@@ -25,6 +30,7 @@ import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 import com.deveficiente.desafiocheckouthotmart.produtos.ProdutoRepository;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
@@ -34,19 +40,27 @@ public class PagaComCartaoCreditoController {
 	private ContaRepository contaRepository;
 	private ConfiguracaoRepository configuracaoRepository;
 	private CartaoGatewayClient cartaoGatewayClient;
+	private ExecutaTransacao executaTransacao;
+	private CompraRepository compraRepository;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
+	
+	
 
 	public PagaComCartaoCreditoController(ProdutoRepository produtoRepository,
 			ContaRepository contaRepository,
 			ConfiguracaoRepository configuracaoRepository,
-			CartaoGatewayClient cartaoGatewayClient) {
+			CartaoGatewayClient cartaoGatewayClient,
+			ExecutaTransacao executaTransacao,
+			CompraRepository compraRepository) {
 		super();
 		this.produtoRepository = produtoRepository;
 		this.contaRepository = contaRepository;
 		this.configuracaoRepository = configuracaoRepository;
 		this.cartaoGatewayClient = cartaoGatewayClient;
+		this.executaTransacao = executaTransacao;
+		this.compraRepository = compraRepository;
 	}
 
 	@InitBinder
@@ -84,56 +98,65 @@ public class PagaComCartaoCreditoController {
 		Optional<Conta> possivelConta = contaRepository
 				.findByEmail(request.getInfoPadrao().getEmail());
 
-		Conta conta = possivelConta.orElseGet(() -> {
-			Configuracao configuracaoDefault = configuracaoRepository
-					.getByOpcaoDefaultIsTrue();
-			Assert.notNull(configuracaoDefault,
-					"Deveria haver uma configuracao default criada");
+		Conta conta = executaTransacao.comRetorno(() -> {
+			return possivelConta.orElseGet(() -> {
+				Configuracao configuracaoDefault = configuracaoRepository
+						.getByOpcaoDefaultIsTrue();
+				Assert.notNull(configuracaoDefault,
+						"Deveria haver uma configuracao default criada");
 
-			Conta contaGravada = contaRepository.save(
-					request.getInfoPadrao().novaConta(configuracaoDefault));
-			Log5WBuilder
-					// se pega o método automático aqui captura o lambda
-					.metodo("PagaComCartaoCreditoController#executa")
-					.oQueEstaAcontecendo(
-							"Novo pagamento: salvando uma nova conta")
-					.adicionaInformacao("codigoNovaConta",
-							contaGravada.getCodigo().toString())
-					.info(log);
+				Conta contaGravada = contaRepository.save(
+						request.getInfoPadrao().novaConta(configuracaoDefault));
+				Log5WBuilder
+						// se pega o método automático aqui captura o lambda
+						.metodo("PagaComCartaoCreditoController#executa")
+						.oQueEstaAcontecendo(
+								"Novo pagamento: salvando uma nova conta")
+						.adicionaInformacao("codigoNovaConta",
+								contaGravada.getCodigo().toString())
+						.info(log);
 
-			return contaGravada;
+				return contaGravada;
+			});
+
 		});
-		
+
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
-		NovoPagamentoGatewayCartaoRequest requestGateway 
-			= request.toPagamentoGatewayCartaoRequest(oferta);
-		
-		Log5WBuilder
-			.metodo()
-			.oQueEstaAcontecendo("Vai processar o pagamento")
-			.adicionaInformacao("request", requestGateway.toString())
-			.info(log);
-		
-		String idTransacao = cartaoGatewayClient.executa(requestGateway);
-		
-		Log5WBuilder
-			.metodo()
-			.oQueEstaAcontecendo("Processou o pagamento")
-			.adicionaInformacao("request", idTransacao)
-			.adicionaInformacao("codigoConta", conta.getCodigo().toString())
-			.info(log);		
+		NovoPagamentoGatewayCartaoRequest requestGateway = request
+				.toPagamentoGatewayCartaoRequest(oferta);
 
-		/*
-		 * - precisa verificar se já existe o usuário com o email 
-		 * - se não existe conta, salva. 
-		 * - precisa processar o pagamento. 
-		 * - Tem que mandar o numero de parcelas e o valor por parcela 
-		 * - cria uma compra associando o id de transacao 
-		 * - politica de retry? - grava a compra
-		 * - associada com o id da transacao - manda email para as situacoes
-		 */
+		Compra novaCompra = executaTransacao.comRetorno(() -> {
+			/*
+			 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
+			 * criar uma nova compra em função da forma de pagamento. Então já
+			 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
+			 * relacionar com uma conta e uma oferta e depois complementar com o
+			 * tipo de pagamento específico.
+			 */
+			
+			return compraRepository.save(
+					CompraBuilder
+						.nova(conta, oferta)
+						.comCartao(requestGateway)); 
+		});
+
+		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
+				.adicionaInformacao("request", requestGateway.toString())
+				.info(log);
+
+		String idTransacao = cartaoGatewayClient.executa(requestGateway);
+
+		Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
+				.adicionaInformacao("request", idTransacao)
+				.adicionaInformacao("codigoConta", conta.getCodigo().toString())
+				.info(log);
+
+		executaTransacao.comRetorno(() -> {
+			novaCompra.finaliza(idTransacao);
+			return novaCompra;
+		});
 
 	}
 }

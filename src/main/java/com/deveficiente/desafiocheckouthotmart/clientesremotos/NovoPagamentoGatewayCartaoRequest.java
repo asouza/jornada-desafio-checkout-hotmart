@@ -2,6 +2,8 @@ package com.deveficiente.desafiocheckouthotmart.clientesremotos;
 
 import java.math.BigDecimal;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
+
 public class NovoPagamentoGatewayCartaoRequest {
 	private String numeroCartao;
 	private String nomeTitular;
@@ -52,6 +54,10 @@ public class NovoPagamentoGatewayCartaoRequest {
 				+ ", nomeTitular=" + nomeTitular + ", mes=" + mes
 				+ ", anoVencimento=" + anoVencimento + ", valorParcela="
 				+ valorParcela + ", numeroParcelas=" + numeroParcelas + "]";
+	}
+
+	public InfoCompraCartao toInfoCompraCartao() {
+		return new InfoCompraCartao(this.numeroCartao,this.nomeTitular,this.valorParcela,this.numeroParcelas,this.anoVencimento,this.mes);
 	}
 
 }
