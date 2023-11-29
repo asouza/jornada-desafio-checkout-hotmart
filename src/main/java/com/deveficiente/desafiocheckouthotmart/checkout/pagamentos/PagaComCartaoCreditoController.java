@@ -17,8 +17,8 @@ import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.TransacaoCompra;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.CartaoGatewayClient;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
@@ -157,6 +157,8 @@ public class PagaComCartaoCreditoController {
 			novaCompra.finaliza(idTransacao);
 			return novaCompra;
 		});
+		
+		
 
 	}
 }

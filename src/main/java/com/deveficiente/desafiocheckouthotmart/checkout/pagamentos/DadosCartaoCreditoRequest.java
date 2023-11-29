@@ -4,7 +4,7 @@ import org.hibernate.validator.constraints.CreditCardNumber;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.MesVencimentoCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 

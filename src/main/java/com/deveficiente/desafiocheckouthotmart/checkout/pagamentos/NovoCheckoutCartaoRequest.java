@@ -1,6 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.validation.Valid;
