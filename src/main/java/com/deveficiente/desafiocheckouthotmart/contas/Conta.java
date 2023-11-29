@@ -97,6 +97,10 @@ public class Conta {
 	public Configuracao getConfiguracao() {
 		return this.configuracao;
 	}
+	
+	public String getEmail() {
+		return email;
+	}
 
     
 

@@ -62,5 +62,9 @@ public class Compra {
 						.statusIgual(status))
 				.toList().iterator().hasNext();
 	}
+	
+	public UUID getCodigo() {
+		return codigo;
+	}
 
 }

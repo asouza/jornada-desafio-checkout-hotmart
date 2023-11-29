@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,6 +20,9 @@ import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.TransacaoCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailRequest;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
@@ -42,18 +46,20 @@ public class PagaComCartaoCreditoController {
 	private CartaoGatewayClient cartaoGatewayClient;
 	private ExecutaTransacao executaTransacao;
 	private CompraRepository compraRepository;
+	private Provider1EmailClient provider1EmailClient;
+	private DynamicTemplateRunner dynamicTemplateRunner;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
-	
-	
 
 	public PagaComCartaoCreditoController(ProdutoRepository produtoRepository,
 			ContaRepository contaRepository,
 			ConfiguracaoRepository configuracaoRepository,
 			CartaoGatewayClient cartaoGatewayClient,
 			ExecutaTransacao executaTransacao,
-			CompraRepository compraRepository) {
+			CompraRepository compraRepository,
+			Provider1EmailClient provider1EmailClient,
+			DynamicTemplateRunner dynamicTemplateRunner) {
 		super();
 		this.produtoRepository = produtoRepository;
 		this.contaRepository = contaRepository;
@@ -61,6 +67,8 @@ public class PagaComCartaoCreditoController {
 		this.cartaoGatewayClient = cartaoGatewayClient;
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
+		this.provider1EmailClient = provider1EmailClient;
+		this.dynamicTemplateRunner = dynamicTemplateRunner;
 	}
 
 	@InitBinder
@@ -135,11 +143,9 @@ public class PagaComCartaoCreditoController {
 			 * relacionar com uma conta e uma oferta e depois complementar com o
 			 * tipo de pagamento específico.
 			 */
-			
-			return compraRepository.save(
-					CompraBuilder
-						.nova(conta, oferta)
-						.comCartao(requestGateway)); 
+
+			return compraRepository.save(CompraBuilder.nova(conta, oferta)
+					.comCartao(requestGateway));
 		});
 
 		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
@@ -157,8 +163,30 @@ public class PagaComCartaoCreditoController {
 			novaCompra.finaliza(idTransacao);
 			return novaCompra;
 		});
+
+		String body = dynamicTemplateRunner.buildTemplate(
+				"template-email-nova-compra.html",
+				Map.of("compra", novaCompra));
+
+		Provider1EmailRequest emailRequest = new Provider1EmailRequest(
+				"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
+				body);
 		
+		Log5WBuilder
+				.metodo()
+				.oQueEstaAcontecendo("Vai enviar o email")
+				.adicionaInformacao("codigo da compra", novaCompra.getCodigo().toString())
+				.adicionaInformacao("email", emailRequest.toString())
+				.info(log);
+
+
+		provider1EmailClient.sendEmail(emailRequest);
 		
+		Log5WBuilder
+				.metodo()
+				.oQueEstaAcontecendo("Enviou o email")
+				.adicionaInformacao("codigo da compra", novaCompra.getCodigo().toString())				
+				.info(log);		
 
 	}
 }
