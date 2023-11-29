@@ -1,6 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.compartilhado;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.springframework.util.Assert;
@@ -40,15 +41,14 @@ public class ResultExecutionFlow<FinalTypeReturn,ProblemType> {
 		return this;
 	}
 
-	public FinalTypeReturn execute() {
-		Assert.isTrue(Objects.nonNull(this.finalReturn), "Na hora que executa precisa de um retorno final setado ou uma exception precisa ser lançada no caminho. Chegou a invocar o método throwsIf ou ifProblem");
-		return this.finalReturn;
+	public Optional<FinalTypeReturn> execute() {
+		return Optional.ofNullable(this.finalReturn);
 	}
 
 	public ResultExecutionFlow<FinalTypeReturn,ProblemType> ifProblem(
 			Class<?> classeProblema, Function<ProblemType, FinalTypeReturn> funcao) {
 		
-		if(problemReturn != null) {
+		if(problemReturn != null && problemReturn.getClass().equals(classeProblema)) {
 			Assert.isTrue(Objects.isNull(this.finalReturn), "O retorno final não deveria estar setado ainda. "+this.finalReturn);
 			this.finalReturn = funcao.apply(this.problemReturn);
 		}

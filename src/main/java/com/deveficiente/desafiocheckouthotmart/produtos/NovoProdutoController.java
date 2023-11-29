@@ -54,7 +54,7 @@ public class NovoProdutoController {
             	return BindExceptionFactory.createGlobalError(request, "novoProdutoRequest"
             			,"Já existe um produto com mesmo nome para esta conta. "+erro.getProduto().getNome());
         	})
-        	.execute();
+        	.execute().get();
 
     }
 }

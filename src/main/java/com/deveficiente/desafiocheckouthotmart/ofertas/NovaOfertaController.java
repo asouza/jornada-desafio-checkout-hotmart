@@ -54,6 +54,6 @@ public class NovaOfertaController {
 					"novaOfertaRequest",
 					"Já existe uma oferta com mesmo nome para este produto. "
 							+ erro.getOferta().getNome());
-		}).execute();
+		}).execute().get();
 	}
 }

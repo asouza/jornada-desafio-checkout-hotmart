@@ -23,9 +23,12 @@ import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.No
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailRequest;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.ConfiguracaoRepository;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
@@ -48,6 +51,7 @@ public class PagaComCartaoCreditoController {
 	private CompraRepository compraRepository;
 	private Provider1EmailClient provider1EmailClient;
 	private DynamicTemplateRunner dynamicTemplateRunner;
+	private RemoteHttpClient remoteHttpClient;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
@@ -59,7 +63,8 @@ public class PagaComCartaoCreditoController {
 			ExecutaTransacao executaTransacao,
 			CompraRepository compraRepository,
 			Provider1EmailClient provider1EmailClient,
-			DynamicTemplateRunner dynamicTemplateRunner) {
+			DynamicTemplateRunner dynamicTemplateRunner,
+			RemoteHttpClient remoteHttpClient) {
 		super();
 		this.produtoRepository = produtoRepository;
 		this.contaRepository = contaRepository;
@@ -69,6 +74,7 @@ public class PagaComCartaoCreditoController {
 		this.compraRepository = compraRepository;
 		this.provider1EmailClient = provider1EmailClient;
 		this.dynamicTemplateRunner = dynamicTemplateRunner;
+		this.remoteHttpClient = remoteHttpClient;
 	}
 
 	@InitBinder
@@ -152,41 +158,68 @@ public class PagaComCartaoCreditoController {
 				.adicionaInformacao("request", requestGateway.toString())
 				.info(log);
 
-		String idTransacao = cartaoGatewayClient.executa(requestGateway);
+		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
+				.execute(() -> {
+					return cartaoGatewayClient.executa(requestGateway);
+				});
 
-		Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
-				.adicionaInformacao("request", idTransacao)
-				.adicionaInformacao("codigoConta", conta.getCodigo().toString())
-				.info(log);
+		resultadoIntegracaoCartao.ifSuccess(idTransacao -> {
 
-		executaTransacao.comRetorno(() -> {
-			novaCompra.finaliza(idTransacao);
+			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
+					.adicionaInformacao("request", idTransacao)
+					.adicionaInformacao("codigoConta",
+							conta.getCodigo().toString())
+					.info(log);
+
+			// deveria logar que vai atualizar a compra. Já que isso aqui vai
+			// parar no banco de dados.
+			// so que cansa mesmo hehe. Como melhorar?
+
+			executaTransacao.comRetorno(() -> {
+				novaCompra.finaliza(idTransacao);
+				return novaCompra;
+			});
+
+			String body = dynamicTemplateRunner.buildTemplate(
+					"template-email-nova-compra.html",
+					Map.of("compra", novaCompra));
+
+			Provider1EmailRequest emailRequest = new Provider1EmailRequest(
+					"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
+					body);
+
+			Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email")
+					.adicionaInformacao("codigo da compra",
+							novaCompra.getCodigo().toString())
+					.adicionaInformacao("email", emailRequest.toString())
+					.info(log);
+
+			provider1EmailClient.sendEmail(emailRequest);
+
+			Log5WBuilder.metodo().oQueEstaAcontecendo("Enviou o email")
+					.adicionaInformacao("codigo da compra",
+							novaCompra.getCodigo().toString())
+					.info(log);
+
 			return novaCompra;
-		});
+		}).ifProblem(Erro500Exception.class, (erro) -> {
+			Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email de problema")
+					.adicionaInformacao("codigo da compra",
+							novaCompra.getCodigo().toString())
+					.adicionaInformacao("email", "email de problema")
+					.info(log);
 
-		String body = dynamicTemplateRunner.buildTemplate(
-				"template-email-nova-compra.html",
-				Map.of("compra", novaCompra));
+//			provider1EmailClient.sendEmail(emailRequest);
 
-		Provider1EmailRequest emailRequest = new Provider1EmailRequest(
-				"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
-				body);
-		
-		Log5WBuilder
-				.metodo()
-				.oQueEstaAcontecendo("Vai enviar o email")
-				.adicionaInformacao("codigo da compra", novaCompra.getCodigo().toString())
-				.adicionaInformacao("email", emailRequest.toString())
-				.info(log);
-
-
-		provider1EmailClient.sendEmail(emailRequest);
-		
-		Log5WBuilder
-				.metodo()
-				.oQueEstaAcontecendo("Enviou o email")
-				.adicionaInformacao("codigo da compra", novaCompra.getCodigo().toString())				
-				.info(log);		
+			Log5WBuilder
+					.metodo()
+					.oQueEstaAcontecendo("Enviou o email de problema")
+					.adicionaInformacao("codigo da compra",novaCompra.getCodigo().toString())
+					.info(log);
+			
+			// TODO obviamente aqui tem um problema de design
+			return null;
+		}).execute();
 
 	}
 }
