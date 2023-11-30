@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
@@ -22,55 +21,45 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
-import com.deveficiente.desafiocheckouthotmart.configuracoes.ConfiguracaoRepository;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
-import com.deveficiente.desafiocheckouthotmart.produtos.ProdutoRepository;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
-@ICP(12)
+@ICP(10)
 public class PagaComCartaoCreditoController {
 
-	@ICP
-	private ProdutoRepository produtoRepository;
-	@ICP
-	private ContaRepository contaRepository;
-	@ICP
-	private ConfiguracaoRepository configuracaoRepository;
 	@ICP
 	private CartaoGatewayClient cartaoGatewayClient;
 	private ExecutaTransacao executaTransacao;
 	@ICP
-	private CompraRepository compraRepository;
-	@ICP
 	private Provider1EmailClient provider1EmailClient;
 	@ICP
 	private FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao;
+	@ICP
+	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
+	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
 
-	public PagaComCartaoCreditoController(ProdutoRepository produtoRepository,
-			ContaRepository contaRepository,
-			ConfiguracaoRepository configuracaoRepository,
+	public PagaComCartaoCreditoController(
 			CartaoGatewayClient cartaoGatewayClient,
 			ExecutaTransacao executaTransacao,
-			CompraRepository compraRepository,
 			Provider1EmailClient provider1EmailClient,
-			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao) {
+			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
+			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
+			EntityManager manager) {
 		super();
-		this.produtoRepository = produtoRepository;
-		this.contaRepository = contaRepository;
-		this.configuracaoRepository = configuracaoRepository;
 		this.cartaoGatewayClient = cartaoGatewayClient;
 		this.executaTransacao = executaTransacao;
-		this.compraRepository = compraRepository;
 		this.provider1EmailClient = provider1EmailClient;
 		this.fluxoRealizacaoCompraCartao = fluxoRealizacaoCompraCartao;
+		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
+		this.manager = manager;
 	}
 
 	@InitBinder
@@ -102,24 +91,20 @@ public class PagaComCartaoCreditoController {
 		 */
 
 		@ICP
-		Produto produto = OptionalToHttpStatusException.execute(
-				produtoRepository.findByCodigo(UUID.fromString(codigoProduto)),
-				404, "Produto não encontrado");
-
-		@ICP
-		Optional<Conta> possivelConta = contaRepository
-				.findByEmail(request.getInfoPadrao().getEmail());
+		Optional<Conta> possivelConta = buscasNecessariasParaPagamento
+				.findContaByEmail(request.getInfoPadrao().getEmail());
 
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return possivelConta.orElseGet(() -> {
 				@ICP
-				Configuracao configuracaoDefault = configuracaoRepository
-						.getByOpcaoDefaultIsTrue();
+				Configuracao configuracaoDefault = buscasNecessariasParaPagamento
+						.getConfiguracaoDefault();
+
 				Assert.notNull(configuracaoDefault,
 						"Deveria haver uma configuracao default criada");
 
-				Conta contaGravada = contaRepository.save(
-						request.getInfoPadrao().novaConta(configuracaoDefault));
+				Conta novaConta = request.getInfoPadrao().novaConta(configuracaoDefault);
+				manager.persist(novaConta);
 
 				Log5WBuilder
 						// se pega o método automático aqui captura o lambda
@@ -127,18 +112,24 @@ public class PagaComCartaoCreditoController {
 						.oQueEstaAcontecendo(
 								"Novo pagamento: salvando uma nova conta")
 						.adicionaInformacao("codigoNovaConta",
-								contaGravada.getCodigo().toString())
+								novaConta.getCodigo().toString())
 						.info(log);
 
-				return contaGravada;
+				return novaConta;
 			});
 
 		});
 
 		@ICP
+		Produto produto = OptionalToHttpStatusException
+				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
+						codigoProduto), 404, "Produto não encontrado");
+
+		@ICP
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
+		@ICP
 		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
 				request);
 
