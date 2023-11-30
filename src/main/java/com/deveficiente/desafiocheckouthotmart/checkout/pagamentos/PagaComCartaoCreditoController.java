@@ -1,6 +1,5 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,20 +14,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailRequest;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.ConfiguracaoRepository;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
@@ -40,7 +32,7 @@ import com.deveficiente.desafiocheckouthotmart.produtos.ProdutoRepository;
 import jakarta.validation.Valid;
 
 @RestController
-@ICP(17)
+@ICP(12)
 public class PagaComCartaoCreditoController {
 
 	@ICP
@@ -51,14 +43,13 @@ public class PagaComCartaoCreditoController {
 	private ConfiguracaoRepository configuracaoRepository;
 	@ICP
 	private CartaoGatewayClient cartaoGatewayClient;
-	@ICP
 	private ExecutaTransacao executaTransacao;
 	@ICP
 	private CompraRepository compraRepository;
 	@ICP
 	private Provider1EmailClient provider1EmailClient;
-	private DynamicTemplateRunner dynamicTemplateRunner;
-	private RemoteHttpClient remoteHttpClient;
+	@ICP
+	private FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
@@ -70,8 +61,7 @@ public class PagaComCartaoCreditoController {
 			ExecutaTransacao executaTransacao,
 			CompraRepository compraRepository,
 			Provider1EmailClient provider1EmailClient,
-			DynamicTemplateRunner dynamicTemplateRunner,
-			RemoteHttpClient remoteHttpClient) {
+			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao) {
 		super();
 		this.produtoRepository = produtoRepository;
 		this.contaRepository = contaRepository;
@@ -80,8 +70,7 @@ public class PagaComCartaoCreditoController {
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
 		this.provider1EmailClient = provider1EmailClient;
-		this.dynamicTemplateRunner = dynamicTemplateRunner;
-		this.remoteHttpClient = remoteHttpClient;
+		this.fluxoRealizacaoCompraCartao = fluxoRealizacaoCompraCartao;
 	}
 
 	@InitBinder
@@ -131,7 +120,7 @@ public class PagaComCartaoCreditoController {
 
 				Conta contaGravada = contaRepository.save(
 						request.getInfoPadrao().novaConta(configuracaoDefault));
-				
+
 				Log5WBuilder
 						// se pega o método automático aqui captura o lambda
 						.metodo("PagaComCartaoCreditoController#executa")
@@ -150,93 +139,8 @@ public class PagaComCartaoCreditoController {
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
-		@ICP
-		NovoPagamentoGatewayCartaoRequest requestGateway = request
-				.toPagamentoGatewayCartaoRequest(oferta);
-
-		@ICP
-		Compra novaCompra = executaTransacao.comRetorno(() -> {
-			/*
-			 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
-			 * criar uma nova compra em função da forma de pagamento. Então já
-			 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
-			 * relacionar com uma conta e uma oferta e depois complementar com o
-			 * tipo de pagamento específico.
-			 */
-
-			return compraRepository.save(CompraBuilder.nova(conta, oferta)
-					.comCartao(requestGateway));
-		});
-
-		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
-				.adicionaInformacao("request", requestGateway.toString())
-				.info(log);
-
-		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
-				.execute(() -> {
-					return cartaoGatewayClient.executa(requestGateway);
-				});
-
-		//@ICP ifSucess 
-		//@ICP e ifProblem
-		resultadoIntegracaoCartao.ifSuccess(idTransacao -> {
-
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
-					.adicionaInformacao("request", idTransacao)
-					.adicionaInformacao("codigoConta",
-							conta.getCodigo().toString())
-					.info(log);
-
-			// deveria logar que vai atualizar a compra. Já que isso aqui vai
-			// parar no banco de dados.
-			// so que cansa mesmo hehe. Como melhorar?
-
-			executaTransacao.comRetorno(() -> {
-				novaCompra.finaliza(idTransacao);
-				return novaCompra;
-			});
-
-			String body = dynamicTemplateRunner.buildTemplate(
-					"template-email-nova-compra.html",
-					Map.of("compra", novaCompra));
-
-			@ICP
-			Provider1EmailRequest emailRequest = new Provider1EmailRequest(
-					"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
-					body);
-
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.adicionaInformacao("email", emailRequest.toString())
-					.info(log);
-
-			provider1EmailClient.sendEmail(emailRequest);
-
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Enviou o email")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.info(log);
-
-			return novaCompra;
-		}).ifProblem(Erro500Exception.class, (erro) -> {
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email de problema")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.adicionaInformacao("email", "email de problema")
-					.info(log);
-
-//			provider1EmailClient.sendEmail(emailRequest);
-
-			Log5WBuilder
-					.metodo()
-					.oQueEstaAcontecendo("Enviou o email de problema")
-					.adicionaInformacao("codigo da compra",novaCompra.getCodigo().toString())
-					.info(log);
-			
-			// TODO obviamente aqui tem um problema de design
-			return null;
-		}).execute();
+		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
+				request);
 
 	}
 }

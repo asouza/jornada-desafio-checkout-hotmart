@@ -48,7 +48,7 @@ public class ResultExecutionFlow<FinalTypeReturn,ProblemType> {
 	public ResultExecutionFlow<FinalTypeReturn,ProblemType> ifProblem(
 			Class<?> classeProblema, Function<ProblemType, FinalTypeReturn> funcao) {
 		
-		if(problemReturn != null && problemReturn.getClass().equals(classeProblema)) {
+		if(problemReturn != null && problemReturn.getClass().isAssignableFrom(classeProblema)) {
 			Assert.isTrue(Objects.isNull(this.finalReturn), "O retorno final não deveria estar setado ainda. "+this.finalReturn);
 			this.finalReturn = funcao.apply(this.problemReturn);
 		}
