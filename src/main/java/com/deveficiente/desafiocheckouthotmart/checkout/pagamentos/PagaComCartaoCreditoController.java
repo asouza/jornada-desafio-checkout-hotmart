@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
-import com.deveficiente.desafiocheckouthotmart.checkout.TransacaoCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
@@ -25,6 +24,7 @@ import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Pr
 import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
@@ -37,18 +37,25 @@ import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 import com.deveficiente.desafiocheckouthotmart.produtos.ProdutoRepository;
 
-import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
+@ICP(17)
 public class PagaComCartaoCreditoController {
 
+	@ICP
 	private ProdutoRepository produtoRepository;
+	@ICP
 	private ContaRepository contaRepository;
+	@ICP
 	private ConfiguracaoRepository configuracaoRepository;
+	@ICP
 	private CartaoGatewayClient cartaoGatewayClient;
+	@ICP
 	private ExecutaTransacao executaTransacao;
+	@ICP
 	private CompraRepository compraRepository;
+	@ICP
 	private Provider1EmailClient provider1EmailClient;
 	private DynamicTemplateRunner dynamicTemplateRunner;
 	private RemoteHttpClient remoteHttpClient;
@@ -98,22 +105,25 @@ public class PagaComCartaoCreditoController {
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
 	public void executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
-			@Valid @RequestBody NovoCheckoutCartaoRequest request) {
+			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
 		/*
 		 * TODO Será que essa sequencia de produto + busca de oferta pode virar
 		 * um Domain Service
 		 */
 
+		@ICP
 		Produto produto = OptionalToHttpStatusException.execute(
 				produtoRepository.findByCodigo(UUID.fromString(codigoProduto)),
 				404, "Produto não encontrado");
 
+		@ICP
 		Optional<Conta> possivelConta = contaRepository
 				.findByEmail(request.getInfoPadrao().getEmail());
 
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return possivelConta.orElseGet(() -> {
+				@ICP
 				Configuracao configuracaoDefault = configuracaoRepository
 						.getByOpcaoDefaultIsTrue();
 				Assert.notNull(configuracaoDefault,
@@ -121,6 +131,7 @@ public class PagaComCartaoCreditoController {
 
 				Conta contaGravada = contaRepository.save(
 						request.getInfoPadrao().novaConta(configuracaoDefault));
+				
 				Log5WBuilder
 						// se pega o método automático aqui captura o lambda
 						.metodo("PagaComCartaoCreditoController#executa")
@@ -135,12 +146,15 @@ public class PagaComCartaoCreditoController {
 
 		});
 
+		@ICP
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
+		@ICP
 		NovoPagamentoGatewayCartaoRequest requestGateway = request
 				.toPagamentoGatewayCartaoRequest(oferta);
 
+		@ICP
 		Compra novaCompra = executaTransacao.comRetorno(() -> {
 			/*
 			 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
@@ -163,6 +177,8 @@ public class PagaComCartaoCreditoController {
 					return cartaoGatewayClient.executa(requestGateway);
 				});
 
+		//@ICP ifSucess 
+		//@ICP e ifProblem
 		resultadoIntegracaoCartao.ifSuccess(idTransacao -> {
 
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
@@ -184,6 +200,7 @@ public class PagaComCartaoCreditoController {
 					"template-email-nova-compra.html",
 					Map.of("compra", novaCompra));
 
+			@ICP
 			Provider1EmailRequest emailRequest = new Provider1EmailRequest(
 					"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
 					body);
