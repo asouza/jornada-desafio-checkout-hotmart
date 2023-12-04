@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
@@ -24,6 +25,10 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
+
+import io.github.resilience4j.decorators.Decorators;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryRegistry;
 
 /**
  * Aqui está concentrado todo fluxo de criacao de uma {@link Compra} utilizando
@@ -46,13 +51,15 @@ public class FluxoRealizacaoCompraCartao {
 	private DynamicTemplateRunner dynamicTemplateRunner;
 	@ICP
 	private Provider1EmailClient provider1EmailClient;
+	private Retry retryCartao;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
 			@ICP CartaoGatewayClient cartaoGatewayClient,
 			DynamicTemplateRunner dynamicTemplateRunner,
-			@ICP Provider1EmailClient provider1EmailClient) {
+			@ICP Provider1EmailClient provider1EmailClient,
+			@Qualifier("retryCartao") Retry retry) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -60,6 +67,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.cartaoGatewayClient = cartaoGatewayClient;
 		this.dynamicTemplateRunner = dynamicTemplateRunner;
 		this.provider1EmailClient = provider1EmailClient;
+		this.retryCartao = retry;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -91,13 +99,19 @@ public class FluxoRealizacaoCompraCartao {
 					.comCartao(requestGateway));
 		});
 
-		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
-				.adicionaInformacao("request", requestGateway.toString())
-				.info(log);
-
+		
+		
 		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
 				.execute(() -> {
-					return cartaoGatewayClient.executa(requestGateway);
+					return Decorators.ofSupplier(() -> {
+						Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
+						.adicionaInformacao("request", requestGateway.toString())
+						.info(log);
+						
+						return cartaoGatewayClient.executa(requestGateway);						
+					})
+					.withRetry(retryCartao)
+					.get();
 				});
 
 		// @ICP ifSucess
