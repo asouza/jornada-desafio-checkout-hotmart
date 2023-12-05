@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailRequest;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
@@ -47,7 +47,7 @@ public class FluxoRealizacaoCompraCartao {
 	private CompraRepository compraRepository;
 	private RemoteHttpClient remoteHttpClient;
 	@ICP
-	private CartaoGatewayClient cartaoGatewayClient;
+	private CartaoGateway1Client cartaoGatewayClient;
 	private DynamicTemplateRunner dynamicTemplateRunner;
 	@ICP
 	private Provider1EmailClient provider1EmailClient;
@@ -56,7 +56,7 @@ public class FluxoRealizacaoCompraCartao {
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
-			@ICP CartaoGatewayClient cartaoGatewayClient,
+			@ICP CartaoGateway1Client cartaoGatewayClient,
 			DynamicTemplateRunner dynamicTemplateRunner,
 			@ICP Provider1EmailClient provider1EmailClient,
 			@Qualifier("retryCartao") Retry retry) {
@@ -81,8 +81,19 @@ public class FluxoRealizacaoCompraCartao {
 	 */
 	public Compra executa(@ICP Oferta oferta, @ICP Conta conta,
 			NovoCheckoutCartaoRequest request) {
+		/*
+		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
+		 * inverter a decisão... Passa a request para construir o dto 
+		 * específico da integração. 
+		 * 
+		 * É preciso identificar quem é o "maior" e quem é o "menor". O menor
+		 * aqui é a request web, então ela não pode conhecer todas implementações
+		 * de dto de integração com o cartão. 
+		 * 
+		 * O código tende a seguir a dependencia do maior para o menor.  
+		 */
 		@ICP
-		NovoPagamentoGatewayCartaoRequest requestGateway = request
+		NovoPagamentoGatewayCartao1Request requestGateway = request
 				.toPagamentoGatewayCartaoRequest(oferta);
 
 		@ICP

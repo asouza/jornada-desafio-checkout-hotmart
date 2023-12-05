@@ -1,10 +1,10 @@
-package com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao;
+package com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway3cartao;
 
 import java.math.BigDecimal;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 
-public class NovoPagamentoGatewayCartaoRequest {
+public class NovoPagamentoGatewayCartao3Request {
 	private String numeroCartao;
 	private String nomeTitular;
 	private String mes;
@@ -12,7 +12,7 @@ public class NovoPagamentoGatewayCartaoRequest {
 	private BigDecimal valorParcela;
 	private int numeroParcelas;
 
-	public NovoPagamentoGatewayCartaoRequest(String numeroCartao,
+	public NovoPagamentoGatewayCartao3Request(String numeroCartao,
 			String nomeTitular, String mes, int anoVencimento,
 			BigDecimal valorParcela, int numeroParcelas) {
 		super();

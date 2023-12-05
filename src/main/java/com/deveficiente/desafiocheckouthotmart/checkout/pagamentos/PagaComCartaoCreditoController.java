@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGatewayClient;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
@@ -33,7 +33,7 @@ import jakarta.validation.Valid;
 public class PagaComCartaoCreditoController {
 
 	@ICP
-	private CartaoGatewayClient cartaoGatewayClient;
+	private CartaoGateway1Client cartaoGatewayClient;
 	private ExecutaTransacao executaTransacao;
 	@ICP
 	private Provider1EmailClient provider1EmailClient;
@@ -47,7 +47,7 @@ public class PagaComCartaoCreditoController {
 			.getLogger(PagaComCartaoCreditoController.class);
 
 	public PagaComCartaoCreditoController(
-			CartaoGatewayClient cartaoGatewayClient,
+			CartaoGateway1Client cartaoGatewayClient,
 			ExecutaTransacao executaTransacao,
 			Provider1EmailClient provider1EmailClient,
 			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,

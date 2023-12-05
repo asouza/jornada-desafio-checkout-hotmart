@@ -4,7 +4,7 @@ import org.hibernate.validator.constraints.CreditCardNumber;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.MesVencimentoCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
@@ -51,12 +51,12 @@ public class DadosCartaoCreditoRequest {
 				+ numeroParcelas + "]";
 	}
 
-	public NovoPagamentoGatewayCartaoRequest toPagamentoGatewayCartaoRequest(
+	public NovoPagamentoGatewayCartao1Request toPagamentoGatewayCartaoRequest(
 			Oferta oferta) {
 		ValorParcelaMes parcelaMes = oferta
 				.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
 
-		return new NovoPagamentoGatewayCartaoRequest(numeroCartao, nomeTitular,
+		return new NovoPagamentoGatewayCartao1Request(numeroCartao, nomeTitular,
 				mes.getMesTexto(), anoVencimento, parcelaMes.getValor(),
 				parcelaMes.getNumeroParcelas());
 	}

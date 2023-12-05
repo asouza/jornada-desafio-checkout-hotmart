@@ -1,6 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public class NovoCheckoutCartaoRequest {
 		return infoPadrao;
 	}
 
-	public NovoPagamentoGatewayCartaoRequest toPagamentoGatewayCartaoRequest(
+	public NovoPagamentoGatewayCartao1Request toPagamentoGatewayCartaoRequest(
 			Oferta oferta) {
 		return dadosCartao.toPagamentoGatewayCartaoRequest(oferta);
 	}

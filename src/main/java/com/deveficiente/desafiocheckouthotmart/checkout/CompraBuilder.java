@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
@@ -20,7 +20,7 @@ public class CompraBuilder {
 			this.oferta = oferta;			
 		}
 
-		public Compra comCartao(NovoPagamentoGatewayCartaoRequest dados) {
+		public Compra comCartao(NovoPagamentoGatewayCartao1Request dados) {
 			
 			/*
 			 * Eu uso uma funcao aqui pq eu quero criar um metadado linkado

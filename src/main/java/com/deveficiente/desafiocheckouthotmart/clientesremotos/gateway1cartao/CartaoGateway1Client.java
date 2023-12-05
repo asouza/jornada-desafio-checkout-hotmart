@@ -4,9 +4,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(name = "paymentClient", url = "${gateway.payment.api.url}")
-public interface CartaoGatewayClient {
+public interface CartaoGateway1Client {
 
     @PostMapping("/gateway/payments")
-    String executa(@RequestBody NovoPagamentoGatewayCartaoRequest paymentRequest);
+    String executa(@RequestBody NovoPagamentoGatewayCartao1Request paymentRequest);
 
 }
