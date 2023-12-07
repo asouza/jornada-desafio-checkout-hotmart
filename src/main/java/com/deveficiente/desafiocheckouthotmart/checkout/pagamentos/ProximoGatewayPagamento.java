@@ -42,7 +42,13 @@ public class ProximoGatewayPagamento {
 	}
 	
 	public Supplier<String> proximoGateway(Compra compra) {
-		return () -> roundRobinExecution.getNextFunction().apply(compra);
+		/*
+		 * tinha deixado a chamada para nextFunction dentro da função
+		 * sendo retornada. Só que isso é um bug.. Se o supplier retornado
+		 * fosse chamada várias vezes, ele ficaria trocando de gateway.  
+		 */
+		Function<Compra, String> proximoGateway = roundRobinExecution.getNextFunction();
+		return () -> proximoGateway.apply(compra);
 	}
 
 }
