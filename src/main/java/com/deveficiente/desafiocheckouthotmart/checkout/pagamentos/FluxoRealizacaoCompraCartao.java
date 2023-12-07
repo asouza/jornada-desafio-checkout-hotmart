@@ -182,6 +182,11 @@ public class FluxoRealizacaoCompraCartao {
 						conta.getCodigo().toString())
 					.info(log);				
 				
+				/*
+				 * O fallback aqui quebrou o constant work pattern. O fluxo normal
+				 * é síncrono e o fluxo alternativo assíncrono. O que vai ser mostrado
+				 * para o cliente? Email foi enviado? Email ainda vai ser enviado?
+				 */
 				jmsTemplate.convertAndSend("envia-email-sucesso-compra", parametrosEmail);
 				
 				Log5WBuilder
