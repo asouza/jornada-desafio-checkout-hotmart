@@ -157,7 +157,17 @@ public class FluxoRealizacaoCompraCartao {
 				return novaCompra;
 			});
 
-			emailsCompra.enviaSucesso(conta, novaCompra);
+			
+			Decorators.ofSupplier(() -> {
+				emailsCompra.enviaSucesso(conta, novaCompra);
+				return null;
+			})
+			.withFallback(exception -> {
+				System.out.println("EXECUTANDO FALLBACK DE EMAIL");
+				return null;
+			})
+			.get();
+			
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
