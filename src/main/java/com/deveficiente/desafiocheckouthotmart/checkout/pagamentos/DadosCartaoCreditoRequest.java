@@ -2,8 +2,10 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
 import org.hibernate.validator.constraints.CreditCardNumber;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.MesVencimentoCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
@@ -51,14 +53,45 @@ public class DadosCartaoCreditoRequest {
 				+ numeroParcelas + "]";
 	}
 
-	public NovoPagamentoGatewayCartao1Request toPagamentoGatewayCartaoRequest(
+	public Integer getAnoVencimento() {
+		return anoVencimento;
+	}
+
+	public MesVencimentoCartao getMes() {
+		return mes;
+	}
+
+	public String getNomeTitular() {
+		return nomeTitular;
+	}
+
+	public String getNumeroCartao() {
+		return numeroCartao;
+	}
+
+	public int getNumeroParcelas() {
+		return numeroParcelas;
+	}
+
+	public void preencheInformacoesCartao(
+			NovoPagamentoGatewayCartaoRequest novoPagamentoGatewayCartaoRequest,
 			Oferta oferta) {
+
 		ValorParcelaMes parcelaMes = oferta
 				.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
 
-		return new NovoPagamentoGatewayCartao1Request(numeroCartao, nomeTitular,
-				mes.getMesTexto(), anoVencimento, parcelaMes.getValor(),
-				parcelaMes.getNumeroParcelas());
+		novoPagamentoGatewayCartaoRequest.preencheDados(this.numeroCartao,
+				this.nomeTitular, this.mes.getMesTexto(), this.anoVencimento,
+				parcelaMes);
+	}
+
+	public InfoCompraCartao toInfoCompraCartao(Oferta oferta) {
+		ValorParcelaMes parcelaMes = oferta
+				.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
+
+		return new InfoCompraCartao(numeroCartao, nomeTitular,
+				parcelaMes.getValor(), parcelaMes.getNumeroParcelas(),
+				this.anoVencimento, this.mes.getMesTexto());
 	}
 
 }

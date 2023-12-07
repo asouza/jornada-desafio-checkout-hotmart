@@ -67,4 +67,12 @@ public class Compra {
 		return codigo;
 	}
 
+	public Oferta getOferta() {
+		return oferta;
+	}
+	
+	public MetadadosCompra getMetadados() {
+		return metadados;
+	}
+
 }

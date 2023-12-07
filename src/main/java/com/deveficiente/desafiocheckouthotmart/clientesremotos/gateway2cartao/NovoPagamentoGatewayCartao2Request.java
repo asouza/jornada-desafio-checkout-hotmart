@@ -2,9 +2,14 @@ package com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway2cartao;
 
 import java.math.BigDecimal;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
+import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.NovoCheckoutCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
-public class NovoPagamentoGatewayCartao2Request {
+public class NovoPagamentoGatewayCartao2Request implements NovoPagamentoGatewayCartaoRequest {
 	private String numeroCartao;
 	private String nomeTitular;
 	private String mes;
@@ -22,6 +27,23 @@ public class NovoPagamentoGatewayCartao2Request {
 		this.anoVencimento = anoVencimento;
 		this.valorParcela = valorParcela;
 		this.numeroParcelas = numeroParcelas;
+	}
+
+	public NovoPagamentoGatewayCartao2Request(Compra compra) {
+		
+		InfoCompraCartao infoCartao = compra.getMetadados()
+			.buscaInfoCompraCartao()
+			.orElseThrow(() -> {
+				throw new IllegalStateException("Se vai processar com cartao, precisa ter um cartao associado a compra");
+			});
+		
+		
+		this.numeroCartao = infoCartao.getNumeroCartao();
+		this.nomeTitular = infoCartao.getNomeTitular();
+		this.mes = infoCartao.getMes().getMesTexto();
+		this.anoVencimento = infoCartao.getAnoVencimento();
+		this.valorParcela = infoCartao.getValorParcela();
+		this.numeroParcelas = infoCartao.getNumeroParcelas();		
 	}
 
 	public String getNumeroCartao() {
@@ -58,6 +80,16 @@ public class NovoPagamentoGatewayCartao2Request {
 
 	public InfoCompraCartao toInfoCompraCartao() {
 		return new InfoCompraCartao(this.numeroCartao,this.nomeTitular,this.valorParcela,this.numeroParcelas,this.anoVencimento,this.mes);
+	}
+
+	@Override
+	public void preencheDados(String numeroCartao, String nomeTitular,
+			String mes, int anoVencimento, ValorParcelaMes valorParcelaMes) {
+		this.numeroCartao = numeroCartao;
+		this.nomeTitular = nomeTitular;
+		this.anoVencimento = anoVencimento;
+		this.numeroParcelas = valorParcelaMes.getNumeroParcelas();
+		this.valorParcela = valorParcelaMes.getValor();
 	}
 
 }

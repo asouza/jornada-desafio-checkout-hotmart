@@ -46,4 +46,30 @@ public class InfoCompraCartao {
 				this.mes = MesVencimentoCartao.from(mes);
 	}
 
+	public String getNumeroCartao() {
+		return numeroCartao;
+	}
+
+	public String getNomeTitular() {
+		return nomeTitular;
+	}
+
+	public BigDecimal getValorParcela() {
+		return valorParcela;
+	}
+
+	public int getNumeroParcelas() {
+		return numeroParcelas;
+	}
+
+	public int getAnoVencimento() {
+		return anoVencimento;
+	}
+
+	public MesVencimentoCartao getMes() {
+		return mes;
+	}
+	
+	
+
 }

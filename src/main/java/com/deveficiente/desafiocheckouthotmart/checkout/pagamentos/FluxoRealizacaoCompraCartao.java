@@ -2,6 +2,8 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,7 @@ import io.github.resilience4j.retry.RetryRegistry;
  * @author albertoluizsouza
  *
  */
-@ICP(10)
+@ICP(11)
 @PartialClass(PagaComCartaoCreditoController.class)
 @Component
 public class FluxoRealizacaoCompraCartao {
@@ -52,6 +54,8 @@ public class FluxoRealizacaoCompraCartao {
 	@ICP
 	private Provider1EmailClient provider1EmailClient;
 	private Retry retryCartao;
+	@ICP
+	private ProximoGatewayPagamento proximoGatewayPagamento;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
@@ -59,7 +63,8 @@ public class FluxoRealizacaoCompraCartao {
 			@ICP CartaoGateway1Client cartaoGatewayClient,
 			DynamicTemplateRunner dynamicTemplateRunner,
 			@ICP Provider1EmailClient provider1EmailClient,
-			@Qualifier("retryCartao") Retry retry) {
+			@Qualifier("retryCartao") Retry retry,
+			ProximoGatewayPagamento proximoGatewayPagamento) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -68,6 +73,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.dynamicTemplateRunner = dynamicTemplateRunner;
 		this.provider1EmailClient = provider1EmailClient;
 		this.retryCartao = retry;
+		this.proximoGatewayPagamento = proximoGatewayPagamento;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -92,9 +98,9 @@ public class FluxoRealizacaoCompraCartao {
 		 * 
 		 * O código tende a seguir a dependencia do maior para o menor.  
 		 */
-		@ICP
-		NovoPagamentoGatewayCartao1Request requestGateway = request
-				.toPagamentoGatewayCartaoRequest(oferta);
+//		@ICP
+//		NovoPagamentoGatewayCartao1Request requestGateway = request
+//				.toPagamentoGatewayCartaoRequest(oferta);
 
 		@ICP
 		Compra novaCompra = executaTransacao.comRetorno(() -> {
@@ -107,19 +113,29 @@ public class FluxoRealizacaoCompraCartao {
 			 */
 
 			return compraRepository.save(CompraBuilder.nova(conta, oferta)
-					.comCartao(requestGateway));
+					.comCartao(request));
 		});
 
 		
 		
 		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
-				.execute(() -> {
+				.execute(() -> {	
+					
+					/*
+					 * Aqui antes eu tava recebendo uma request e uma oferta. 
+					 * Só que eu tenho um padrão que preciso documentar, se eu já computei uma 
+					 * variavel em função de outras, eu não posso mais usar aquelas variaveis
+					 * no mesmo fluxo. Se eu uso, pode ser um sinal que alguma coisa ficou 
+					 * mal desenhada. 
+					 */
+					Supplier<String> proximoGateway = proximoGatewayPagamento.proximoGateway(novaCompra);
+					
 					return Decorators.ofSupplier(() -> {
 						Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
-						.adicionaInformacao("request", requestGateway.toString())
+						.adicionaInformacao("compra", novaCompra.toString())
 						.info(log);
 						
-						return cartaoGatewayClient.executa(requestGateway);						
+						return proximoGateway.get();						
 					})
 					.withRetry(retryCartao)
 					.get();

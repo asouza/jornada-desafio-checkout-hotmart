@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao;
 
 import java.math.BigDecimal;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 
 public class NovoPagamentoGatewayCartao1Request {
@@ -12,16 +13,34 @@ public class NovoPagamentoGatewayCartao1Request {
 	private BigDecimal valorParcela;
 	private int numeroParcelas;
 
-	public NovoPagamentoGatewayCartao1Request(String numeroCartao,
-			String nomeTitular, String mes, int anoVencimento,
-			BigDecimal valorParcela, int numeroParcelas) {
-		super();
-		this.numeroCartao = numeroCartao;
-		this.nomeTitular = nomeTitular;
-		this.mes = mes;
-		this.anoVencimento = anoVencimento;
-		this.valorParcela = valorParcela;
-		this.numeroParcelas = numeroParcelas;
+	
+
+	public NovoPagamentoGatewayCartao1Request(Compra compra) {
+		
+		/*
+		 * Inicialmente eu recebia a request e oferta. Mas, no meu sistema,
+		 * um compra deve sempre criada no começo do pagamento. Então eu forço
+		 * todo mundo a receber tal compra. 
+		 * 
+		 * Só percebi implementando mesmo... Na imaginação pareceu fazer sentido 
+		 * o outro jeito. Aí eu tinha usado uma politica de double dispatch, criando
+		 * uma interface que todo dto de saida de gateway de pagamento deveria implementar
+		 * e que seria chamado lá pelo request de pagamento com cartao
+		 */
+		
+		InfoCompraCartao infoCartao = compra.getMetadados()
+			.buscaInfoCompraCartao()
+			.orElseThrow(() -> {
+				throw new IllegalStateException("Se vai processar com cartao, precisa ter um cartao associado a compra");
+			});
+		
+		
+		this.numeroCartao = infoCartao.getNumeroCartao();
+		this.nomeTitular = infoCartao.getNomeTitular();
+		this.mes = infoCartao.getMes().getMesTexto();
+		this.anoVencimento = infoCartao.getAnoVencimento();
+		this.valorParcela = infoCartao.getValorParcela();
+		this.numeroParcelas = infoCartao.getNumeroParcelas();		
 	}
 
 	public String getNumeroCartao() {
@@ -59,5 +78,9 @@ public class NovoPagamentoGatewayCartao1Request {
 	public InfoCompraCartao toInfoCompraCartao() {
 		return new InfoCompraCartao(this.numeroCartao,this.nomeTitular,this.valorParcela,this.numeroParcelas,this.anoVencimento,this.mes);
 	}
+
+
+
+
 
 }

@@ -2,9 +2,12 @@ package com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway3cartao;
 
 import java.math.BigDecimal;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
+import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 
-public class NovoPagamentoGatewayCartao3Request {
+public class NovoPagamentoGatewayCartao3Request implements NovoPagamentoGatewayCartaoRequest {
 	private String numeroCartao;
 	private String nomeTitular;
 	private String mes;
@@ -23,6 +26,33 @@ public class NovoPagamentoGatewayCartao3Request {
 		this.valorParcela = valorParcela;
 		this.numeroParcelas = numeroParcelas;
 	}
+
+	public NovoPagamentoGatewayCartao3Request(Compra compra) {
+		
+		InfoCompraCartao infoCartao = compra.getMetadados()
+			.buscaInfoCompraCartao()
+			.orElseThrow(() -> {
+				throw new IllegalStateException("Se vai processar com cartao, precisa ter um cartao associado a compra");
+			});
+		
+		
+		this.numeroCartao = infoCartao.getNumeroCartao();
+		this.nomeTitular = infoCartao.getNomeTitular();
+		this.mes = infoCartao.getMes().getMesTexto();
+		this.anoVencimento = infoCartao.getAnoVencimento();
+		this.valorParcela = infoCartao.getValorParcela();
+		this.numeroParcelas = infoCartao.getNumeroParcelas();		
+	}
+
+	@Override
+	public void preencheDados(String numeroCartao, String nomeTitular,
+			String mes, int anoVencimento, ValorParcelaMes valorParcelaMes) {
+		this.numeroCartao = numeroCartao;
+		this.nomeTitular = nomeTitular;
+		this.anoVencimento = anoVencimento;
+		this.numeroParcelas = valorParcelaMes.getNumeroParcelas();
+		this.valorParcela = valorParcelaMes.getValor();
+	}	
 
 	public String getNumeroCartao() {
 		return numeroCartao;

@@ -1,6 +1,9 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.util.Optional;
+import java.util.function.Function;
+
+import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -34,12 +37,12 @@ public class MetadadosCompra {
 		this.compra = compra;
 	}
 
-	public void setInfoCompraCartao(InfoCompraCartao infoCompraCartao) {
-		this.infoCompraCartao = infoCompraCartao;		
-	}
-	
 	public Optional<InfoCompraCartao> buscaInfoCompraCartao() {
 		return Optional.ofNullable(infoCompraCartao);
+	}
+
+	public void setInfoCompraCartao(Function<Oferta, InfoCompraCartao> funcaoCriadoraInfoCompraCartao) {
+		this.infoCompraCartao = funcaoCriadoraInfoCompraCartao.apply(compra.getOferta());
 	}
 
 }
