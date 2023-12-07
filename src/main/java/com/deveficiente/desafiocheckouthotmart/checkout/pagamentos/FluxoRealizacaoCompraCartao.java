@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
@@ -56,13 +57,16 @@ public class FluxoRealizacaoCompraCartao {
 	private ProximoGatewayPagamento proximoGatewayPagamento;
 	@ICP
 	private EmailsCompra emailsCompra;
+	private JmsTemplate jmsTemplate;
+
+	
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
 			@ICP CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
 			@ICP ProximoGatewayPagamento proximoGatewayPagamento,
-			EmailsCompra emailsCompra) {
+			@ICP EmailsCompra emailsCompra, JmsTemplate jmsTemplate) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -71,6 +75,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.retryCartao = retryCartao;
 		this.proximoGatewayPagamento = proximoGatewayPagamento;
 		this.emailsCompra = emailsCompra;
+		this.jmsTemplate = jmsTemplate;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -163,8 +168,30 @@ public class FluxoRealizacaoCompraCartao {
 				return null;
 			})
 			.withFallback(exception -> {
-				System.out.println("EXECUTANDO FALLBACK DE EMAIL");
-				return null;
+				Map<String, String> parametrosEmail = 
+						Map.of("codigoConta",
+								conta.getCodigo().toString(),
+								"codigoCompra",
+								novaCompra.getCodigo().toString());
+				
+				Log5WBuilder
+					.metodo()
+					.oQueEstaAcontecendo("Colocando o email de sucesso para ser disparado via fila")
+					.adicionaInformacao("request", idTransacao)
+					.adicionaInformacao("codigoConta",
+						conta.getCodigo().toString())
+					.info(log);				
+				
+				jmsTemplate.convertAndSend("envia-email-sucesso-compra", parametrosEmail);
+				
+				Log5WBuilder
+					.metodo()
+					.oQueEstaAcontecendo("Enviou o email de sucesso para ser disparado via fila")
+					.adicionaInformacao("request", idTransacao)
+					.adicionaInformacao("codigoConta",
+							conta.getCodigo().toString())
+					.info(log);				
+					return null;
 			})
 			.get();
 			
