@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
+import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
@@ -39,7 +40,7 @@ import io.github.resilience4j.retry.RetryRegistry;
  * @author albertoluizsouza
  *
  */
-@ICP(11)
+@ICP(9)
 @PartialClass(PagaComCartaoCreditoController.class)
 @Component
 public class FluxoRealizacaoCompraCartao {
@@ -50,30 +51,26 @@ public class FluxoRealizacaoCompraCartao {
 	private RemoteHttpClient remoteHttpClient;
 	@ICP
 	private CartaoGateway1Client cartaoGatewayClient;
-	private DynamicTemplateRunner dynamicTemplateRunner;
-	@ICP
-	private Provider1EmailClient provider1EmailClient;
 	private Retry retryCartao;
 	@ICP
 	private ProximoGatewayPagamento proximoGatewayPagamento;
+	@ICP
+	private EmailsCompra emailsCompra;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
-			@ICP CartaoGateway1Client cartaoGatewayClient,
-			DynamicTemplateRunner dynamicTemplateRunner,
-			@ICP Provider1EmailClient provider1EmailClient,
-			@Qualifier("retryCartao") Retry retry,
-			ProximoGatewayPagamento proximoGatewayPagamento) {
+			@ICP CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
+			@ICP ProximoGatewayPagamento proximoGatewayPagamento,
+			EmailsCompra emailsCompra) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
 		this.remoteHttpClient = remoteHttpClient;
 		this.cartaoGatewayClient = cartaoGatewayClient;
-		this.dynamicTemplateRunner = dynamicTemplateRunner;
-		this.provider1EmailClient = provider1EmailClient;
-		this.retryCartao = retry;
+		this.retryCartao = retryCartao;
 		this.proximoGatewayPagamento = proximoGatewayPagamento;
+		this.emailsCompra = emailsCompra;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -89,14 +86,14 @@ public class FluxoRealizacaoCompraCartao {
 			NovoCheckoutCartaoRequest request) {
 		/*
 		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
-		 * inverter a decisão... Passa a request para construir o dto 
-		 * específico da integração. 
+		 * inverter a decisão... Passa a request para construir o dto específico
+		 * da integração.
 		 * 
 		 * É preciso identificar quem é o "maior" e quem é o "menor". O menor
-		 * aqui é a request web, então ela não pode conhecer todas implementações
-		 * de dto de integração com o cartão. 
+		 * aqui é a request web, então ela não pode conhecer todas
+		 * implementações de dto de integração com o cartão.
 		 * 
-		 * O código tende a seguir a dependencia do maior para o menor.  
+		 * O código tende a seguir a dependencia do maior para o menor.
 		 */
 //		@ICP
 //		NovoPagamentoGatewayCartao1Request requestGateway = request
@@ -112,33 +109,33 @@ public class FluxoRealizacaoCompraCartao {
 			 * tipo de pagamento específico.
 			 */
 
-			return compraRepository.save(CompraBuilder.nova(conta, oferta)
-					.comCartao(request));
+			return compraRepository
+					.save(CompraBuilder.nova(conta, oferta).comCartao(request));
 		});
 
-		
-		
 		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
-				.execute(() -> {	
-					
+				.execute(() -> {
+
 					/*
-					 * Aqui antes eu tava recebendo uma request e uma oferta. 
-					 * Só que eu tenho um padrão que preciso documentar, se eu já computei uma 
-					 * variavel em função de outras, eu não posso mais usar aquelas variaveis
-					 * no mesmo fluxo. Se eu uso, pode ser um sinal que alguma coisa ficou 
-					 * mal desenhada. 
+					 * Aqui antes eu tava recebendo uma request e uma oferta. Só
+					 * que eu tenho um padrão que preciso documentar, se eu já
+					 * computei uma variavel em função de outras, eu não posso
+					 * mais usar aquelas variaveis no mesmo fluxo. Se eu uso,
+					 * pode ser um sinal que alguma coisa ficou mal desenhada.
 					 */
-					Supplier<String> proximoGateway = proximoGatewayPagamento.proximoGateway(novaCompra);
-					
+					Supplier<String> proximoGateway = proximoGatewayPagamento
+							.proximoGateway(novaCompra);
+
 					return Decorators.ofSupplier(() -> {
-						Log5WBuilder.metodo().oQueEstaAcontecendo("Vai processar o pagamento")
-						.adicionaInformacao("compra", novaCompra.toString())
-						.info(log);
-						
-						return proximoGateway.get();						
-					})
-					.withRetry(retryCartao)
-					.get();
+						Log5WBuilder.metodo()
+								.oQueEstaAcontecendo(
+										"Vai processar o pagamento")
+								.adicionaInformacao("compra",
+										novaCompra.toString())
+								.info(log);
+
+						return proximoGateway.get();
+					}).withRetry(retryCartao).get();
 				});
 
 		// @ICP ifSucess
@@ -160,27 +157,7 @@ public class FluxoRealizacaoCompraCartao {
 				return novaCompra;
 			});
 
-			String body = dynamicTemplateRunner.buildTemplate(
-					"template-email-nova-compra.html",
-					Map.of("compra", novaCompra));
-
-			@ICP
-			Provider1EmailRequest emailRequest = new Provider1EmailRequest(
-					"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
-					body);
-
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.adicionaInformacao("email", emailRequest.toString())
-					.info(log);
-
-			provider1EmailClient.sendEmail(emailRequest);
-
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Enviou o email")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.info(log);
+			emailsCompra.enviaSucesso(conta, novaCompra);
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
