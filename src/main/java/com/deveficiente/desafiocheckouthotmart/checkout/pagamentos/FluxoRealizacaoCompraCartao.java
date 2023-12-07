@@ -161,20 +161,9 @@ public class FluxoRealizacaoCompraCartao {
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
-			Log5WBuilder.metodo()
-					.oQueEstaAcontecendo("Vai enviar o email de problema")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.adicionaInformacao("email", "email de problema").info(log);
-
-//			provider1EmailClient.sendEmail(emailRequest);
-
-			Log5WBuilder.metodo()
-					.oQueEstaAcontecendo("Enviou o email de problema")
-					.adicionaInformacao("codigo da compra",
-							novaCompra.getCodigo().toString())
-					.info(log);
-
+			
+			emailsCompra.enviaEmailFalha(conta,novaCompra);
+			
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
 			return novaCompra;
 		}).ifProblem(Exception.class, e -> {

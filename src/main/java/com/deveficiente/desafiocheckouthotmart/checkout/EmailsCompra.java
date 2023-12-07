@@ -54,4 +54,20 @@ public class EmailsCompra {
 				.info(log);
 	}
 
+	public void enviaEmailFalha(Conta conta, Compra novaCompra) {
+		Log5WBuilder.metodo()
+				.oQueEstaAcontecendo("Vai enviar o email de problema")
+				.adicionaInformacao("codigo da compra",
+						novaCompra.getCodigo().toString())
+				.adicionaInformacao("email", "email de problema").info(log);
+
+		//provider1EmailClient.sendEmail(emailRequest);
+
+		Log5WBuilder.metodo().oQueEstaAcontecendo("Enviou o email de problema")
+				.adicionaInformacao("codigo da compra",
+						novaCompra.getCodigo().toString())
+				.info(log);
+
+	}
+
 }
