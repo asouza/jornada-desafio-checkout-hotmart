@@ -155,7 +155,7 @@ public class FluxoRealizacaoCompraCartao {
 					 */
 					.withCircuitBreaker(circuitBreakerCartao)
 					.withRetry(retryCartao)
-					.get();
+					.get();									
 				});
 
 		// @ICP ifSucess

@@ -5,12 +5,14 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
 import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -24,14 +26,14 @@ public class ConfiguraPoliticaRetry {
 			.getLogger(ConfiguraPoliticaRetry.class);
 	
 	@Autowired
-	private RetryRegistry retryRegistry;
+	private RetryRegistry retryRegistry;	
 	
 	/*
 	 * Aqui agora eu tenho um caminho para configurar as politicas 
 	 * de retry em função dos tipos de serviços e tudo mais. 
 	 */
 	@Bean("retryCartao")
-	public Retry configuraRetryServicoCartao() {
+	public Retry configuraRetryServicoCartao(@Qualifier("circuitBreakerCartao") CircuitBreaker circuitBreakerCartao) {
 		RetryConfig config = RetryConfig.custom()
           	  .maxAttempts(2)
           	  .intervalFunction(IntervalFunction
@@ -49,6 +51,13 @@ public class ConfiguraPoliticaRetry {
           				  //podia ser debug aqui
           				  .info(log);	            			
           				  
+          				  /*
+          				   * Aqui é um experimento tentando implementar a ideia
+          				   * de Token Bucket global para retries. O problema é que o token bucket
+          				   * deveria começar a ser usado depois de um determinado percentual falhar,
+          				   * e não em toda falha.
+          				   */
+          				  circuitBreakerCartao.tryAcquirePermission();
           				  return true;	            				  
           			  }
           			  
@@ -70,7 +79,7 @@ public class ConfiguraPoliticaRetry {
           		  
           		  return false;
           	  })
-          	  .failAfterMaxAttempts(true)
+          	  .failAfterMaxAttempts(true)          	  
           	  .build();
 		
 		return retryRegistry.retry("retryCartao", config);
