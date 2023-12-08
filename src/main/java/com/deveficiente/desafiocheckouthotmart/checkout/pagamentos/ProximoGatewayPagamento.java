@@ -38,7 +38,8 @@ public class ProximoGatewayPagamento {
 			return cartaoGateway3Client.executa(new NovoPagamentoGatewayCartao3Request(compra));
 		};
 		
-		roundRobinExecution = new RoundRobinExecution<>("gatewayCartao", List.of(funcaoGateway1,funcaoGateway2,funcaoGateway3));
+//		roundRobinExecution = new RoundRobinExecution<>("gatewayCartao", List.of(funcaoGateway1,funcaoGateway2,funcaoGateway3));
+		roundRobinExecution = new RoundRobinExecution<>("gatewayCartao", List.of(funcaoGateway1));
 	}
 	
 	public Supplier<String> proximoGateway(Compra compra) {

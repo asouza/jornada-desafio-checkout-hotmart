@@ -33,7 +33,7 @@ public class ConfiguraPoliticaRetry {
 	@Bean("retryCartao")
 	public Retry configuraRetryServicoCartao() {
 		RetryConfig config = RetryConfig.custom()
-          	  .maxAttempts(5)
+          	  .maxAttempts(2)
           	  .intervalFunction(IntervalFunction
           			  .ofExponentialBackoff(Duration.ofSeconds(1), 2))
           	  .retryOnException(exception -> {

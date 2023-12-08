@@ -30,6 +30,7 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.decorators.Decorators;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryRegistry;
@@ -58,15 +59,15 @@ public class FluxoRealizacaoCompraCartao {
 	@ICP
 	private EmailsCompra emailsCompra;
 	private JmsTemplate jmsTemplate;
-
-	
+	private CircuitBreaker circuitBreakerCartao;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
-			@ICP CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
+			@ICP CartaoGateway1Client cartaoGatewayClient, @Qualifier("retryCartao") Retry retryCartao,
 			@ICP ProximoGatewayPagamento proximoGatewayPagamento,
-			@ICP EmailsCompra emailsCompra, JmsTemplate jmsTemplate) {
+			@ICP EmailsCompra emailsCompra, JmsTemplate jmsTemplate,
+			@Qualifier("circuitBreakerCartao") CircuitBreaker circuitBreakerCartao) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -76,6 +77,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.proximoGatewayPagamento = proximoGatewayPagamento;
 		this.emailsCompra = emailsCompra;
 		this.jmsTemplate = jmsTemplate;
+		this.circuitBreakerCartao = circuitBreakerCartao;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -140,7 +142,20 @@ public class FluxoRealizacaoCompraCartao {
 								.info(log);
 
 						return proximoGateway.get();
-					}).withRetry(retryCartao).get();
+					})
+					/*
+					 * A ordem aqui importa. O primeiro decorator é aplicado
+					 * primeiro.. Então aqui, se a chamada falha, o 
+					 * circuitBreaker é incrementado e depois rola o retry. Isso 
+					 * quer dizer que se tiver chegado no limte ele nem vai tentar
+					 * a próxima. 
+					 * 
+					 * Só que não rola fazer a política aqui do token bucket estilo amazon,
+					 * para isso acontecer cada falha deveria ser contabilizar no circuitbreaker. 
+					 */
+					.withCircuitBreaker(circuitBreakerCartao)
+					.withRetry(retryCartao)
+					.get();
 				});
 
 		// @ICP ifSucess
@@ -162,50 +177,44 @@ public class FluxoRealizacaoCompraCartao {
 				return novaCompra;
 			});
 
-			
 			Decorators.ofSupplier(() -> {
 				emailsCompra.enviaSucesso(conta, novaCompra);
 				return null;
-			})
-			.withFallback(exception -> {
-				Map<String, String> parametrosEmail = 
-						Map.of("codigoConta",
-								conta.getCodigo().toString(),
-								"codigoCompra",
-								novaCompra.getCodigo().toString());
-				
-				Log5WBuilder
-					.metodo()
-					.oQueEstaAcontecendo("Colocando o email de sucesso para ser disparado via fila")
-					.adicionaInformacao("request", idTransacao)
-					.adicionaInformacao("codigoConta",
-						conta.getCodigo().toString())
-					.info(log);				
-				
+			}).withFallback(exception -> {
+				Map<String, String> parametrosEmail = Map.of("codigoConta",
+						conta.getCodigo().toString(), "codigoCompra",
+						novaCompra.getCodigo().toString());
+
+				Log5WBuilder.metodo().oQueEstaAcontecendo(
+						"Colocando o email de sucesso para ser disparado via fila")
+						.adicionaInformacao("request", idTransacao)
+						.adicionaInformacao("codigoConta",
+								conta.getCodigo().toString())
+						.info(log);
+
 				/*
-				 * O fallback aqui quebrou o constant work pattern. O fluxo normal
-				 * é síncrono e o fluxo alternativo assíncrono. O que vai ser mostrado
-				 * para o cliente? Email foi enviado? Email ainda vai ser enviado?
+				 * O fallback aqui quebrou o constant work pattern. O fluxo
+				 * normal é síncrono e o fluxo alternativo assíncrono. O que vai
+				 * ser mostrado para o cliente? Email foi enviado? Email ainda
+				 * vai ser enviado?
 				 */
-				jmsTemplate.convertAndSend("envia-email-sucesso-compra", parametrosEmail);
-				
-				Log5WBuilder
-					.metodo()
-					.oQueEstaAcontecendo("Enviou o email de sucesso para ser disparado via fila")
-					.adicionaInformacao("request", idTransacao)
-					.adicionaInformacao("codigoConta",
-							conta.getCodigo().toString())
-					.info(log);				
-					return null;
-			})
-			.get();
-			
+				jmsTemplate.convertAndSend("envia-email-sucesso-compra",
+						parametrosEmail);
+
+				Log5WBuilder.metodo().oQueEstaAcontecendo(
+						"Enviou o email de sucesso para ser disparado via fila")
+						.adicionaInformacao("request", idTransacao)
+						.adicionaInformacao("codigoConta",
+								conta.getCodigo().toString())
+						.info(log);
+				return null;
+			}).get();
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
-			
-			emailsCompra.enviaEmailFalha(conta,novaCompra);
-			
+
+			emailsCompra.enviaEmailFalha(conta, novaCompra);
+
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
 			return novaCompra;
 		}).ifProblem(Exception.class, e -> {
