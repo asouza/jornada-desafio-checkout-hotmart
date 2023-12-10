@@ -77,11 +77,9 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
     					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
     					.oQueEstaAcontecendo("Saving new IdempotencyKeyPair")
     					.adicionaInformacao("idempotencyKey", idempotencyKey)
-    					.info(log);
-    				
-    		    	String json = JsonHelper.json(body);
+    					.info(log);    				    		    	
     		    	
-    		    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,json);    				
+    		    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,body);    				
     				
     				return idempotencyKeyPairRepository.save(keyPair);    				
     			});

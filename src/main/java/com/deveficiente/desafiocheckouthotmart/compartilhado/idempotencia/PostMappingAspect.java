@@ -54,12 +54,9 @@ public class PostMappingAspect {
 				.metodo("PostMappingAspect#execute")
 				.oQueEstaAcontecendo("Returning idempotent value")
 				.adicionaInformacao("idempontentKey", needsIdempotency.get())
-				.info(log);
+				.info(log);		
 			
-			//just to become compatible with proceed returning
-			String json = pair.get().getIdempotencyValue();
-			
-			return (Object)JsonHelper.desserializa(json, Retorno.class);
+			return pair.get().desserialize();
 		})
 		.orElseGet(() -> {
 			
