@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,7 +83,7 @@ public class PagaComCartaoCreditoController {
 	}
 
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
-	public Retorno executa(@PathVariable("codigoProduto") String codigoProduto,
+	public Retorno2 executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
@@ -134,11 +135,15 @@ public class PagaComCartaoCreditoController {
 		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
 				request);
 		
-		return new Retorno(compraCriada.getCodigo().toString());
+		return new Retorno2(compraCriada.getCodigo().toString(),compraCriada.getOferta().getPreco());
 
 	}
 	
 	public static record Retorno(String codigo) {
 		
+	}
+	
+	public static record Retorno2(String codigo,BigDecimal preco) {
+
 	}
 }
