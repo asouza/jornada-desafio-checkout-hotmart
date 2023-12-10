@@ -12,8 +12,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.JsonHelper;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 
 @ControllerAdvice
@@ -21,7 +24,10 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
 	
 	@Autowired
 	private HttpServletRequest httpServletRequest;
-	
+	@Autowired
+	private EntityManager entityManager;
+	@Autowired
+	private ExecutaTransacao executaTransacao;
 	
 	
 	private static final Logger log = LoggerFactory
@@ -49,8 +55,15 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
                                   Class selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
 
-    	String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
     	
+    	
+    	String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
+    	String json = JsonHelper.json(body);
+    	
+    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,json);
+    	executaTransacao.semRetorno(() -> {
+    		entityManager.persist(keyPair);
+    	});
     	
         return body; // Retornar o corpo da resposta modificado ou inalterado
     }

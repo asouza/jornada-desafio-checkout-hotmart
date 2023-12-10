@@ -13,4 +13,9 @@ public class ExecutaTransacao {
 	public <T> T comRetorno(Supplier<T> supplier) {
 		return supplier.get();
 	}
+
+	@Transactional
+	public void semRetorno(Runnable runnable) {
+		runnable.run();
+	}
 }
