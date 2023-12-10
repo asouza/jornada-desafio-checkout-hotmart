@@ -50,4 +50,13 @@ public class JsonHelper {
 			Class<T> targetClass) {
 		return mapper.convertValue(origem, targetClass);
 	}
+	
+	public static <T> T desserializa(String json,
+			Class<T> targetClass) {
+		try {
+			return mapper.readValue(json, targetClass);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

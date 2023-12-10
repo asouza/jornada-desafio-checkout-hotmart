@@ -58,20 +58,30 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
     	
     	
     	String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
-    	String json = JsonHelper.json(body);
-    	
-    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,json);
     	
     	executaTransacao.semRetorno(() -> {
     		idempotencyKeyPairRepository
     			.findByIdempotencyKey(idempotencyKey)
-    			.orElseGet(() -> {
+    			.map(keyPair -> {
     				
+    				Log5WBuilder
+					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
+					.oQueEstaAcontecendo("Logging the existence of a idempontencyKey")
+					.adicionaInformacao("idempotencyKey", idempotencyKey)
+					.info(log);    				
+    				return keyPair;
+    			})
+    			.orElseGet(() -> {
+    				    				
     				Log5WBuilder
     					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
     					.oQueEstaAcontecendo("Saving new IdempotencyKeyPair")
     					.adicionaInformacao("idempotencyKey", idempotencyKey)
     					.info(log);
+    				
+    		    	String json = JsonHelper.json(body);
+    		    	
+    		    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,json);    				
     				
     				return idempotencyKeyPairRepository.save(keyPair);    				
     			});

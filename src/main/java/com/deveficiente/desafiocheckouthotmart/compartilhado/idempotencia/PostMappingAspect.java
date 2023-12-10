@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.PagaComCartaoCreditoController.Retorno;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.JsonHelper;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
 import jakarta.persistence.EntityManager;
@@ -55,7 +57,9 @@ public class PostMappingAspect {
 				.info(log);
 			
 			//just to become compatible with proceed returning
-			return (Object)pair.get().getIdempotencyValue();
+			String json = pair.get().getIdempotencyValue();
+			
+			return (Object)JsonHelper.desserializa(json, Retorno.class);
 		})
 		.orElseGet(() -> {
 			
