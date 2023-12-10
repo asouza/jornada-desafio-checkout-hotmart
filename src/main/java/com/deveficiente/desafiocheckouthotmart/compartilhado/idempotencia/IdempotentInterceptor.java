@@ -19,6 +19,17 @@ public class IdempotentInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    	
+    	if(!request.getMethod().equals("POST")) {
+    		//aqui deveria ser debug
+    		Log5WBuilder
+			.metodo("IdempotentInterceptor#preHandler")
+			.oQueEstaAcontecendo("Descartando request que não é post")
+			.adicionaInformacao("method", request.getMethod())
+			.info(log);    		
+    	}
+    		
+    	
     	Optional<String> needsIdempotency = Optional.ofNullable(request.getHeader("Idempotency-Key"));
     	
     	return needsIdempotency.map(key -> {
@@ -28,6 +39,8 @@ public class IdempotentInterceptor implements HandlerInterceptor {
     			.oQueEstaAcontecendo("Verificando se já existe chave idempotencia")
     			.adicionaInformacao("key", key)
     			.info(log);
+    		
+    		//verifica se a chave já exis
     		
     		return true;    		
     	}).orElse(true);
