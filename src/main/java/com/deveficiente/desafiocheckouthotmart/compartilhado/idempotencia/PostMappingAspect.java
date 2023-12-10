@@ -14,6 +14,7 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Optional;
 
@@ -26,6 +27,8 @@ public class PostMappingAspect {
 
 	@Autowired
 	private HttpServletRequest httpServletRequest;
+	@Autowired
+	private HttpServletResponse httpServletResponse;
 	@Autowired
 	private IdempotencyKeyPairRepository idempotencyKeyPairRepository;
 	
@@ -56,6 +59,7 @@ public class PostMappingAspect {
 				.adicionaInformacao("idempontentKey", needsIdempotency.get())
 				.info(log);		
 			
+			httpServletResponse.setHeader("idempotent-response", "true");
 			return pair.get().desserialize();
 		})
 		.orElseGet(() -> {
