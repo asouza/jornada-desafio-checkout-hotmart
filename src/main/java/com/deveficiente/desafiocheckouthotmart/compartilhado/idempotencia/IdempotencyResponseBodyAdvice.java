@@ -25,7 +25,7 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
 	@Autowired
 	private HttpServletRequest httpServletRequest;
 	@Autowired
-	private EntityManager entityManager;
+	private IdempotencyKeyPairRepository idempotencyKeyPairRepository;
 	@Autowired
 	private ExecutaTransacao executaTransacao;
 	
@@ -61,8 +61,20 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
     	String json = JsonHelper.json(body);
     	
     	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,json);
+    	
     	executaTransacao.semRetorno(() -> {
-    		entityManager.persist(keyPair);
+    		idempotencyKeyPairRepository
+    			.findByIdempotencyKey(idempotencyKey)
+    			.orElseGet(() -> {
+    				
+    				Log5WBuilder
+    					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
+    					.oQueEstaAcontecendo("Saving new IdempotencyKeyPair")
+    					.adicionaInformacao("idempotencyKey", idempotencyKey)
+    					.info(log);
+    				
+    				return idempotencyKeyPairRepository.save(keyPair);    				
+    			});
     	});
     	
         return body; // Retornar o corpo da resposta modificado ou inalterado
