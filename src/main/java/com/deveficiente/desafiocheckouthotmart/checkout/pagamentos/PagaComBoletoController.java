@@ -1,12 +1,9 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
-import java.math.BigDecimal;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,23 +13,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
-import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
-import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
 @ICP(10)
-public class PagaComCartaoCreditoController {
+public class PagaComBoletoController {
 
 	private ExecutaTransacao executaTransacao;
 	@ICP
@@ -42,9 +34,9 @@ public class PagaComCartaoCreditoController {
 	private RegistraNovaContaService registraNovaContaService;
 
 	private static final Logger log = LoggerFactory
-			.getLogger(PagaComCartaoCreditoController.class);
+			.getLogger(PagaComBoletoController.class);
 
-	public PagaComCartaoCreditoController(ExecutaTransacao executaTransacao,
+	public PagaComBoletoController(ExecutaTransacao executaTransacao,
 			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
 			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
 			RegistraNovaContaService registraNovaContaService) {
@@ -74,15 +66,23 @@ public class PagaComCartaoCreditoController {
 	}
 
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
-	public Retorno2 executa(@PathVariable("codigoProduto") String codigoProduto,
+	public void executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
-		Conta conta = executaTransacao.comRetorno(() -> {
-			return registraNovaContaService.executa(
-					request.getInfoPadrao().getEmail(),
-					request.getInfoPadrao()::novaConta);
+		/*
+		 * TODO Será que essa sequencia de produto + busca de oferta pode virar
+		 * um Domain Service
+		 */
 
+
+		/*
+		 * Tenho a sensação cada vez maior que o ponto de origem
+		 * da chamada deve sempre controlar a transação. É o que tem
+		 * mais visibilidade de tudo. 
+		 */
+		Conta conta = executaTransacao.comRetorno(() -> {
+			return registraNovaContaService.executa(codigoOferta, request.getInfoPadrao() :: novaConta);
 		});
 
 		@ICP
@@ -98,16 +98,6 @@ public class PagaComCartaoCreditoController {
 		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
 				request);
 
-		return new Retorno2(compraCriada.getCodigo().toString(),
-				compraCriada.getOferta().getPreco());
-
 	}
 
-	public static record Retorno(String codigo) {
-
-	}
-
-	public static record Retorno2(String codigo, BigDecimal preco) {
-
-	}
 }
