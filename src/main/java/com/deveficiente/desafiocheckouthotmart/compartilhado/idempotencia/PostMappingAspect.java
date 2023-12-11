@@ -30,7 +30,7 @@ public class PostMappingAspect {
 	@Autowired
 	private HttpServletResponse httpServletResponse;
 	@Autowired
-	private IdempotencyKeyPairRepository idempotencyKeyPairRepository;
+	private IdempotencyValueFinder idempotencyValueFinder;
 	
 	private static final Logger log = LoggerFactory
 			.getLogger(PostMappingAspect.class);
@@ -38,37 +38,29 @@ public class PostMappingAspect {
 
 	@Around("within(@org.springframework.web.bind.annotation.RestController *) && @annotation(org.springframework.web.bind.annotation.PostMapping)")
 	public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+
+		String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
 		
-		Optional<String> needsIdempotency = Optional
-				.ofNullable(httpServletRequest.getHeader("Idempotency-Key"));
-		
-		return 
-		needsIdempotency
-		.map(key -> {
-			Optional<IdempotencyKeyPair> pair = idempotencyKeyPairRepository
-					.findByIdempotencyKey(key);
-			
-			return pair;
-		})
-		.filter(pair -> pair.isPresent())
-		.map(pair -> {
-			
+		return  
+				
+		idempotencyValueFinder.execute(idempotencyKey)					
+		.map(pair -> {			
 			Log5WBuilder
 				.metodo("PostMappingAspect#execute")
 				.oQueEstaAcontecendo("Returning idempotent value")
-				.adicionaInformacao("idempontentKey", needsIdempotency.get())
+				.adicionaInformacao("idempontentKey", idempotencyKey)
 				.info(log);		
 			
 			httpServletResponse.setHeader("idempotent-response", "true");
-			return pair.get().desserialize();
+			return pair;
 		})
 		.orElseGet(() -> {
 			
 			Log5WBuilder
-			.metodo("PostMappingAspect#execute")
-			.oQueEstaAcontecendo("Let the request flows")
-			.adicionaInformacao("idempontentKey", needsIdempotency.get())
-			.info(log);
+				.metodo("PostMappingAspect#execute")
+				.oQueEstaAcontecendo("Let the request flows")
+				.adicionaInformacao("idempontentKey", idempotencyKey)
+				.info(log);
 			
 			try {
 				return joinPoint.proceed();

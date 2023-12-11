@@ -25,9 +25,9 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
 	@Autowired
 	private HttpServletRequest httpServletRequest;
 	@Autowired
-	private IdempotencyKeyPairRepository idempotencyKeyPairRepository;
-	@Autowired
 	private ExecutaTransacao executaTransacao;
+	@Autowired
+	private IdempontecyValuePersister idempontecyValuePersister;
 	
 	
 	private static final Logger log = LoggerFactory
@@ -60,29 +60,7 @@ public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object>
     	String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
     	
     	executaTransacao.semRetorno(() -> {
-    		idempotencyKeyPairRepository
-    			.findByIdempotencyKey(idempotencyKey)
-    			.map(keyPair -> {
-    				
-    				Log5WBuilder
-					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
-					.oQueEstaAcontecendo("Logging the existence of a idempontencyKey")
-					.adicionaInformacao("idempotencyKey", idempotencyKey)
-					.info(log);    				
-    				return keyPair;
-    			})
-    			.orElseGet(() -> {
-    				    				
-    				Log5WBuilder
-    					.metodo("IdempotencyResponseBodyAdvice#beforeBodyWrite")
-    					.oQueEstaAcontecendo("Saving new IdempotencyKeyPair")
-    					.adicionaInformacao("idempotencyKey", idempotencyKey)
-    					.info(log);    				    		    	
-    		    	
-    		    	IdempotencyKeyPair keyPair = new IdempotencyKeyPair(idempotencyKey,body);    				
-    				
-    				return idempotencyKeyPairRepository.save(keyPair);    				
-    			});
+    		idempontecyValuePersister.execute(idempotencyKey,body);
     	});
     	
         return body; // Retornar o corpo da resposta modificado ou inalterado
