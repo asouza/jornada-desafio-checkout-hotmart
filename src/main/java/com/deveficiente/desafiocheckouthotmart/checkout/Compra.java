@@ -102,9 +102,18 @@ public class Compra {
 	}
 
 	public TransacaoCompra getUltimaTransacaoRegistrada() {
-		Assert.state(temTransacaoComStatus(StatusCompra.iniciada), "Toda compra deveria nascer com uma transacao indicando que ela foi iniciada => "+this.codigo);
+		assertTemTransacaoIniciada();
 		
 		return this.transacoes.get(this.transacoes.size()-1);
+	}
+
+	private void assertTemTransacaoIniciada() {
+		Assert.state(temTransacaoComStatus(StatusCompra.iniciada), "Toda compra deveria nascer com uma transacao indicando que ela foi iniciada => "+this.codigo);
+	}
+
+	public void adicionaTransacao(StatusCompra status) {
+		assertTemTransacaoIniciada();	
+		this.transacoes.add(new TransacaoCompra(this, status));
 	}
 
 }

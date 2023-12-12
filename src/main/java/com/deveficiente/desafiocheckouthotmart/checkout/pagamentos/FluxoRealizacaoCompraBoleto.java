@@ -13,6 +13,7 @@ import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuil
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
+import com.deveficiente.desafiocheckouthotmart.checkout.StatusCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.BoletoApiClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.NovoBoletoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
@@ -140,11 +141,9 @@ public class FluxoRealizacaoCompraBoleto {
 			// so que cansa mesmo hehe. Como melhorar?
 
 			executaTransacao.comRetorno(() -> {
-				novaCompra.finaliza(idTransacao);
+				novaCompra.adicionaTransacao(StatusCompra.gerando_boleto);
 				return novaCompra;
 			});
-
-			fluxoEnviaEmailSucesso.executa(novaCompra);
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
