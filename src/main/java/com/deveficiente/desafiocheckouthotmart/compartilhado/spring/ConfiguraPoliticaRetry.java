@@ -41,7 +41,7 @@ public class ConfiguraPoliticaRetry {
           	  .retryOnException(exception -> {
           		  if(exception instanceof FeignException) {
           			  
-          			  FeignException feignException = (FeignException) exception;
+          			  FeignException feignException = (FeignException) exception;          			  
           			  
           			  if(feignException.status() == 500) {
           				  Log5WBuilder
@@ -65,6 +65,7 @@ public class ConfiguraPoliticaRetry {
       				  .metodo()
       				  .oQueEstaAcontecendo("Não vai rolar tentativa de retry para chamada http")		            		  	
       				  .adicionaInformacao("status", feignException.status()+"")
+      				  .adicionaInformacao("url", feignException.request().url()+"")
       				  //podia ser debug aqui
       				  .info(log);	            			  
           			  

@@ -17,16 +17,13 @@ import jakarta.validation.constraints.Positive;
 public class InfoCompraCartao {
 
 	@CreditCardNumber
-	@NotBlank
 	private String numeroCartao;
-	@NotBlank	
 	private String nomeTitular;
-	@NotNull
 	private BigDecimal valorParcela;
 	@Positive
-	private int numeroParcelas;
+	private Integer numeroParcelas;
 	@FutureOrPresentYear
-	private int anoVencimento;
+	private Integer anoVencimento;
 	@Enumerated(EnumType.STRING)
 	private MesVencimentoCartao mes;
 	

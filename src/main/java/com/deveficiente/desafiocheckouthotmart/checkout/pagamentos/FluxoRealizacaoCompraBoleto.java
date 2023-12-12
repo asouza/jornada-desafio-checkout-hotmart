@@ -1,5 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import java.time.LocalDate;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -11,6 +13,8 @@ import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuil
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.BoletoApiClient;
+import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.NovoBoletoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
@@ -32,7 +36,7 @@ import io.github.resilience4j.retry.Retry;
  *
  */
 @ICP(10)
-@PartialClass(PagaComCartaoCreditoController.class)
+@PartialClass(PagaComBoletoController.class)
 @Component
 public class FluxoRealizacaoCompraBoleto {
 
@@ -40,34 +44,30 @@ public class FluxoRealizacaoCompraBoleto {
 	@ICP
 	private CompraRepository compraRepository;
 	private RemoteHttpClient remoteHttpClient;
-	@ICP
-	private CartaoGateway1Client cartaoGatewayClient;
-	private Retry retryCartao;
-	@ICP
-	private ProximoGatewayPagamento proximoGatewayPagamento;
+	private Retry retryDefault;
 	@ICP
 	private EmailsCompra emailsCompra;
-	private CircuitBreaker circuitBreakerCartao;
+	private CircuitBreaker circuitBreakerDefault;
 	@ICP
 	private FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso;
+	@ICP
+	private BoletoApiClient boletoApiClient;
 
 	public FluxoRealizacaoCompraBoleto(ExecutaTransacao executaTransacao,
-			CompraRepository compraRepository,
-			RemoteHttpClient remoteHttpClient,
-			CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
-			ProximoGatewayPagamento proximoGatewayPagamento,
-			EmailsCompra emailsCompra, CircuitBreaker circuitBreakerCartao,
-			FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso) {
+			@ICP CompraRepository compraRepository,
+			RemoteHttpClient remoteHttpClient, Retry retryDefault,
+			@ICP EmailsCompra emailsCompra, CircuitBreaker circuitBreakerDefault,
+			@ICP FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso,
+			@ICP BoletoApiClient boletoApiClient) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
 		this.remoteHttpClient = remoteHttpClient;
-		this.cartaoGatewayClient = cartaoGatewayClient;
-		this.retryCartao = retryCartao;
-		this.proximoGatewayPagamento = proximoGatewayPagamento;
+		this.retryDefault = retryDefault;
 		this.emailsCompra = emailsCompra;
-		this.circuitBreakerCartao = circuitBreakerCartao;
+		this.circuitBreakerDefault = circuitBreakerDefault;
 		this.fluxoEnviaEmailSucesso = fluxoEnviaEmailSucesso;
+		this.boletoApiClient = boletoApiClient;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -80,21 +80,11 @@ public class FluxoRealizacaoCompraBoleto {
 	 * @param request
 	 */
 	public Compra executa(CompraBuilderPasso2 basicoDaCompra,
-			NovoCheckoutCartaoRequest request) {
-		/*
-		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
-		 * inverter a decisão... Passa a request para construir o dto específico
-		 * da integração.
-		 * 
-		 * É preciso identificar quem é o "maior" e quem é o "menor". O menor
-		 * aqui é a request web, então ela não pode conhecer todas
-		 * implementações de dto de integração com o cartão.
-		 * 
-		 * O código tende a seguir a dependencia do maior para o menor.
-		 */
-//		@ICP
-//		NovoPagamentoGatewayCartao1Request requestGateway = request
-//				.toPagamentoGatewayCartaoRequest(oferta);
+			NovoCheckoutBoletoRequest request) {
+
+		String codigoBoleto = UUID.randomUUID().toString();
+		LocalDate dataExpiracao = LocalDate.now().plusDays(3);
+		
 
 		@ICP
 		Compra novaCompra = executaTransacao.comRetorno(() -> {
@@ -106,7 +96,8 @@ public class FluxoRealizacaoCompraBoleto {
 			 * tipo de pagamento específico.
 			 */
 
-			return compraRepository.save(basicoDaCompra.comCartao(request));
+			return compraRepository
+					.save(basicoDaCompra.comBoleto(request, codigoBoleto,dataExpiracao));
 		});
 
 		Result<RuntimeException, String> resultadoIntegracao = remoteHttpClient
@@ -119,9 +110,6 @@ public class FluxoRealizacaoCompraBoleto {
 					 * mais usar aquelas variaveis no mesmo fluxo. Se eu uso,
 					 * pode ser um sinal que alguma coisa ficou mal desenhada.
 					 */
-					Supplier<String> proximoGateway = proximoGatewayPagamento
-							.proximoGateway(novaCompra);
-
 					return Decorators.ofSupplier(() -> {
 						Log5WBuilder.metodo()
 								.oQueEstaAcontecendo(
@@ -130,21 +118,10 @@ public class FluxoRealizacaoCompraBoleto {
 										novaCompra.toString())
 								.info(log);
 
-						return proximoGateway.get();
+						return boletoApiClient.executa(new NovoBoletoRequest(novaCompra));
 					})
-							/*
-							 * A ordem aqui importa. O primeiro decorator é
-							 * aplicado primeiro.. Então aqui, se a chamada
-							 * falha, o circuitBreaker é incrementado e depois
-							 * rola o retry. Isso quer dizer que se tiver
-							 * chegado no limte ele nem vai tentar a próxima.
-							 * 
-							 * Só que não rola fazer a política aqui do token
-							 * bucket estilo amazon, para isso acontecer cada
-							 * falha deveria ser contabilizar no circuitbreaker.
-							 */
-							.withCircuitBreaker(circuitBreakerCartao)
-							.withRetry(retryCartao).get();
+					.withCircuitBreaker(circuitBreakerDefault)
+					.withRetry(retryDefault).get();
 				});
 
 		// @ICP ifSucess
@@ -152,7 +129,8 @@ public class FluxoRealizacaoCompraBoleto {
 		return resultadoIntegracao.ifSuccess(idTransacao -> {
 
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
-					.adicionaInformacao("request", idTransacao)
+					.adicionaInformacao("codigoCompra", novaCompra.getCodigo().toString())
+					.adicionaInformacao("idTransacao", idTransacao)
 					.adicionaInformacao("codigoConta",
 							novaCompra.getCodigoConta().toString())
 					.info(log);
@@ -177,7 +155,7 @@ public class FluxoRealizacaoCompraBoleto {
 			return novaCompra;
 		}).ifProblem(Exception.class, e -> {
 			Log5WBuilder.metodo().oQueEstaAcontecendo(
-					"Aconteceu um problema inesperado na integracao com o cartao de credito")
+					"Aconteceu um problema inesperado na integracao com a api de boleto")
 					.adicionaInformacao("codigoCompra",
 							novaCompra.getCodigo().toString())
 					.debug(log);

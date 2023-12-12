@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,8 +47,8 @@ public class Compra {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados) {
 		this.conta = conta;
 		this.oferta = oferta;
-		this.metadados = funcaoCriadoraMetadados.apply(this);
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
+		this.metadados = funcaoCriadoraMetadados.apply(this);
 	}
 
 	public void finaliza(String idTransacao) {
@@ -57,6 +58,10 @@ public class Compra {
 
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.finalizada,
 				idTransacao));
+	}
+	
+	public BigDecimal getPreco() {
+		return oferta.getPreco();
 	}
 
 	private boolean temTransacaoComStatus(StatusCompra status) {

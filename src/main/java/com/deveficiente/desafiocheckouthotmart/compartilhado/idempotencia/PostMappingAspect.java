@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.PagaComCartaoCreditoController.Retorno;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.JsonHelper;
@@ -40,6 +41,10 @@ public class PostMappingAspect {
 	public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
 
 		String idempotencyKey = httpServletRequest.getHeader("Idempotency-Key");
+		
+		if(!StringUtils.hasText(idempotencyKey)) {
+			return joinPoint.proceed();
+		}
 		
 		return  
 				

@@ -10,7 +10,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 
 /**
@@ -32,6 +31,8 @@ public class MetadadosCompra {
 	private Compra compra;
 	@Embedded
 	private InfoCompraCartao infoCompraCartao;
+	@Embedded
+	private InfoCompraBoleto infoCompraBoleto;
 
 	public MetadadosCompra(Compra compra) {
 		this.compra = compra;
@@ -40,9 +41,17 @@ public class MetadadosCompra {
 	public Optional<InfoCompraCartao> buscaInfoCompraCartao() {
 		return Optional.ofNullable(infoCompraCartao);
 	}
+	
+	public Optional<InfoCompraBoleto> buscaInfoCompraBoleto() {
+		return Optional.ofNullable(infoCompraBoleto);
+	}
 
 	public void setInfoCompraCartao(Function<Oferta, InfoCompraCartao> funcaoCriadoraInfoCompraCartao) {
 		this.infoCompraCartao = funcaoCriadoraInfoCompraCartao.apply(compra.getOferta());
+	}
+
+	public void setInfoBoleto(InfoCompraBoleto infoCompraBoleto) {
+		this.infoCompraBoleto = infoCompraBoleto;
 	}
 
 }

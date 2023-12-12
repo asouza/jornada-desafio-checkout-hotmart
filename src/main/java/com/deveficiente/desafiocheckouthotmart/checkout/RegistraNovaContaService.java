@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
@@ -16,6 +17,7 @@ import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import jakarta.persistence.EntityManager;
 
 @ICP(3)
+@Service
 public class RegistraNovaContaService {
 
 	@ICP
