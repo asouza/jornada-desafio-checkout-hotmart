@@ -1,5 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
@@ -28,7 +32,7 @@ public class PagaComBoletoController {
 
 	private ExecutaTransacao executaTransacao;
 	@ICP
-	private FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao;
+	private FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto;
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
 	private RegistraNovaContaService registraNovaContaService;
@@ -37,12 +41,12 @@ public class PagaComBoletoController {
 			.getLogger(PagaComBoletoController.class);
 
 	public PagaComBoletoController(ExecutaTransacao executaTransacao,
-			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
+			FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
 			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
 			RegistraNovaContaService registraNovaContaService) {
 		super();
 		this.executaTransacao = executaTransacao;
-		this.fluxoRealizacaoCompraCartao = fluxoRealizacaoCompraCartao;
+		this.fluxoRealizacaoCompraBoleto = fluxoRealizacaoCompraBoleto;
 		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
 		this.registraNovaContaService = registraNovaContaService;
 	}
@@ -66,23 +70,15 @@ public class PagaComBoletoController {
 	}
 
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
-	public void executa(@PathVariable("codigoProduto") String codigoProduto,
+	public Map<String, String> executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
-		/*
-		 * TODO Será que essa sequencia de produto + busca de oferta pode virar
-		 * um Domain Service
-		 */
-
-
-		/*
-		 * Tenho a sensação cada vez maior que o ponto de origem
-		 * da chamada deve sempre controlar a transação. É o que tem
-		 * mais visibilidade de tudo. 
-		 */
 		Conta conta = executaTransacao.comRetorno(() -> {
-			return registraNovaContaService.executa(codigoOferta, request.getInfoPadrao() :: novaConta);
+			return registraNovaContaService.executa(
+					request.getInfoPadrao().getEmail(),
+					request.getInfoPadrao()::novaConta);
+
 		});
 
 		@ICP
@@ -94,10 +90,15 @@ public class PagaComBoletoController {
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
+		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
+
 		@ICP
-		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
-				request);
+		Compra compraCriada = fluxoRealizacaoCompraBoleto
+				.executa(basicoDaCompra, request);
+
+		return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
+				"ultimoStatus",
+				compraCriada.getUltimaTransacaoRegistrada().getStatus().toString());
 
 	}
-
 }

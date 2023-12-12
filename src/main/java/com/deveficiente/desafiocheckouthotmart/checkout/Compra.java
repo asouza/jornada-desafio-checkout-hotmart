@@ -96,4 +96,10 @@ public class Compra {
 
 	}
 
+	public TransacaoCompra getUltimaTransacaoRegistrada() {
+		Assert.state(temTransacaoComStatus(StatusCompra.iniciada), "Toda compra deveria nascer com uma transacao indicando que ela foi iniciada => "+this.codigo);
+		
+		return this.transacoes.get(this.transacoes.size()-1);
+	}
+
 }

@@ -51,6 +51,10 @@ public class TransacaoCompra {
 	public Optional<String> buscaIdTransacao() {
 		return Optional.ofNullable(idTransacao);
 	}
+
+	public StatusCompra getStatus() {
+		return this.status;
+	}
 	
 	
 	
