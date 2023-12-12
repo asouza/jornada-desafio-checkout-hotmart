@@ -11,7 +11,6 @@ import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Pr
 import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
-import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 
 @Component
 public class EmailsCompra {
@@ -31,14 +30,14 @@ public class EmailsCompra {
 		this.provider1EmailClient = provider1EmailClient;
 	}
 
-	public void enviaSucesso(@ICP Conta conta, @ICP Compra novaCompra) {
+	public void enviaSucesso(@ICP Compra novaCompra) {
 		String body = dynamicTemplateRunner.buildTemplate(
 				"template-email-nova-compra.html",
 				Map.of("compra", novaCompra));
 
 		@ICP
 		Provider1EmailRequest emailRequest = new Provider1EmailRequest(
-				"Compra aprovada", "checkout@hotmart.com", conta.getEmail(),
+				"Compra aprovada", "checkout@hotmart.com", novaCompra.getConta().getEmail(),
 				body);
 
 		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email")
@@ -54,7 +53,7 @@ public class EmailsCompra {
 				.info(log);
 	}
 
-	public void enviaEmailFalha(Conta conta, Compra novaCompra) {
+	public void enviaEmailFalha(Compra novaCompra) {
 		Log5WBuilder.metodo()
 				.oQueEstaAcontecendo("Vai enviar o email de problema")
 				.adicionaInformacao("codigo da compra",

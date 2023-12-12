@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
@@ -78,13 +80,16 @@ public class PagaComCartaoCreditoController {
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
+
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return registraNovaContaService.executa(
 					request.getInfoPadrao().getEmail(),
 					request.getInfoPadrao()::novaConta);
-
+			
 		});
-
+		
+		
+		
 		@ICP
 		Produto produto = OptionalToHttpStatusException
 				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
@@ -94,8 +99,10 @@ public class PagaComCartaoCreditoController {
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
+		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);		
+		
 		@ICP
-		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(oferta, conta,
+		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(basicoDaCompra,
 				request);
 
 		return new Retorno2(compraCriada.getCodigo().toString(),

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
@@ -89,7 +90,7 @@ public class FluxoRealizacaoCompraCartao {
 	 * @param conta
 	 * @param request
 	 */
-	public Compra executa(@ICP Oferta oferta, @ICP Conta conta,
+	public Compra executa(CompraBuilderPasso2 basicoDaCompra,
 			NovoCheckoutCartaoRequest request) {
 		/*
 		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
@@ -117,7 +118,7 @@ public class FluxoRealizacaoCompraCartao {
 			 */
 
 			return compraRepository
-					.save(CompraBuilder.nova(conta, oferta).comCartao(request));
+					.save(basicoDaCompra.comCartao(request));
 		});
 
 		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
@@ -165,7 +166,7 @@ public class FluxoRealizacaoCompraCartao {
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
 					.adicionaInformacao("request", idTransacao)
 					.adicionaInformacao("codigoConta",
-							conta.getCodigo().toString())
+							novaCompra.getCodigoConta().toString())
 					.info(log);
 
 			// deveria logar que vai atualizar a compra. Já que isso aqui vai
@@ -178,18 +179,18 @@ public class FluxoRealizacaoCompraCartao {
 			});
 
 			Decorators.ofSupplier(() -> {
-				emailsCompra.enviaSucesso(conta, novaCompra);
+				emailsCompra.enviaSucesso(novaCompra);
 				return null;
 			}).withFallback(exception -> {
 				Map<String, String> parametrosEmail = Map.of("codigoConta",
-						conta.getCodigo().toString(), "codigoCompra",
+						novaCompra.getCodigoConta().toString(), "codigoCompra",
 						novaCompra.getCodigo().toString());
 
 				Log5WBuilder.metodo().oQueEstaAcontecendo(
 						"Colocando o email de sucesso para ser disparado via fila")
 						.adicionaInformacao("request", idTransacao)
 						.adicionaInformacao("codigoConta",
-								conta.getCodigo().toString())
+								novaCompra.getCodigoConta().toString())
 						.info(log);
 
 				/*
@@ -205,7 +206,7 @@ public class FluxoRealizacaoCompraCartao {
 						"Enviou o email de sucesso para ser disparado via fila")
 						.adicionaInformacao("request", idTransacao)
 						.adicionaInformacao("codigoConta",
-								conta.getCodigo().toString())
+								novaCompra.getCodigoConta().toString())
 						.info(log);
 				return null;
 			}).get();
@@ -213,7 +214,7 @@ public class FluxoRealizacaoCompraCartao {
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
-			emailsCompra.enviaEmailFalha(conta, novaCompra);
+			emailsCompra.enviaEmailFalha(novaCompra);
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
 			return novaCompra;

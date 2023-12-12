@@ -75,4 +75,12 @@ public class Compra {
 		return metadados;
 	}
 
+	public UUID getCodigoConta() {
+		return this.conta.getCodigo();
+	}
+
+	public Conta getConta() {
+		return this.conta;
+	}
+
 }
