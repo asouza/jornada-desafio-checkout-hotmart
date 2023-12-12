@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -35,7 +36,7 @@ public class Compra {
 			CascadeType.MERGE })
 	private List<TransacaoCompra> transacoes = new ArrayList<>();
 	private UUID codigo = UUID.randomUUID();
-	
+
 	@Deprecated
 	public Compra() {
 		// TODO Auto-generated constructor stub
@@ -46,23 +47,28 @@ public class Compra {
 		this.conta = conta;
 		this.oferta = oferta;
 		this.metadados = funcaoCriadoraMetadados.apply(this);
-		this.transacoes.add(new TransacaoCompra(this,StatusCompra.iniciada));
+		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
 	}
 
 	public void finaliza(String idTransacao) {
-		Assert.state(!temTransacaoComStatus(StatusCompra.finalizada), "Uma compra finalizada não deveria ser finalizada novamente =>"+this.codigo);
-		
-		this.transacoes
-				.add(new TransacaoCompra(this,StatusCompra.finalizada, idTransacao));
+		Assert.state(!temTransacaoComStatus(StatusCompra.finalizada),
+				"Uma compra finalizada não deveria ser finalizada novamente =>"
+						+ this.codigo);
+
+		this.transacoes.add(new TransacaoCompra(this, StatusCompra.finalizada,
+				idTransacao));
 	}
 
 	private boolean temTransacaoComStatus(StatusCompra status) {
-		return this.transacoes.stream()
-				.filter(transacao -> transacao
-						.statusIgual(status))
-				.toList().iterator().hasNext();
+		return buscaTransacaoComStatus(status).isPresent();
 	}
-	
+
+	private Optional<TransacaoCompra> buscaTransacaoComStatus(
+			StatusCompra status) {
+		return this.transacoes.stream()
+				.filter(transacao -> transacao.statusIgual(status)).findFirst();
+	}
+
 	public UUID getCodigo() {
 		return codigo;
 	}
@@ -70,7 +76,7 @@ public class Compra {
 	public Oferta getOferta() {
 		return oferta;
 	}
-	
+
 	public MetadadosCompra getMetadados() {
 		return metadados;
 	}
@@ -81,6 +87,13 @@ public class Compra {
 
 	public Conta getConta() {
 		return this.conta;
+	}
+
+	public Optional<String> buscaIdTransacao() {
+		Optional<TransacaoCompra> possivelTransacao = buscaTransacaoComStatus(
+				StatusCompra.finalizada);
+		return possivelTransacao.flatMap(tx -> tx.buscaIdTransacao());
+
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -45,6 +46,10 @@ public class TransacaoCompra {
 
 	public boolean statusIgual(StatusCompra statusBuscado) {
 		return this.status.equals(statusBuscado);
+	}
+	
+	public Optional<String> buscaIdTransacao() {
+		return Optional.ofNullable(idTransacao);
 	}
 	
 	

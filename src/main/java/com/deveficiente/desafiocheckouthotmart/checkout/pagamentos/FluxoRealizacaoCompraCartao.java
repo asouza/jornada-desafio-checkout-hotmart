@@ -1,26 +1,17 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
+import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailClient;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.provedor1email.Provider1EmailRequest;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.DynamicTemplateRunner;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
@@ -28,13 +19,10 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.PartialClass;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
-import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.decorators.Decorators;
 import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryRegistry;
 
 /**
  * Aqui está concentrado todo fluxo de criacao de uma {@link Compra} utilizando
@@ -43,7 +31,7 @@ import io.github.resilience4j.retry.RetryRegistry;
  * @author albertoluizsouza
  *
  */
-@ICP(9)
+@ICP(10)
 @PartialClass(PagaComCartaoCreditoController.class)
 @Component
 public class FluxoRealizacaoCompraCartao {
@@ -59,16 +47,17 @@ public class FluxoRealizacaoCompraCartao {
 	private ProximoGatewayPagamento proximoGatewayPagamento;
 	@ICP
 	private EmailsCompra emailsCompra;
-	private JmsTemplate jmsTemplate;
 	private CircuitBreaker circuitBreakerCartao;
+	@ICP
+	private FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
-			@ICP CompraRepository compraRepository,
+			CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient,
-			@ICP CartaoGateway1Client cartaoGatewayClient, @Qualifier("retryCartao") Retry retryCartao,
-			@ICP ProximoGatewayPagamento proximoGatewayPagamento,
-			@ICP EmailsCompra emailsCompra, JmsTemplate jmsTemplate,
-			@Qualifier("circuitBreakerCartao") CircuitBreaker circuitBreakerCartao) {
+			CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
+			ProximoGatewayPagamento proximoGatewayPagamento,
+			EmailsCompra emailsCompra, CircuitBreaker circuitBreakerCartao,
+			FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -77,8 +66,8 @@ public class FluxoRealizacaoCompraCartao {
 		this.retryCartao = retryCartao;
 		this.proximoGatewayPagamento = proximoGatewayPagamento;
 		this.emailsCompra = emailsCompra;
-		this.jmsTemplate = jmsTemplate;
 		this.circuitBreakerCartao = circuitBreakerCartao;
+		this.fluxoEnviaEmailSucesso = fluxoEnviaEmailSucesso;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -117,11 +106,10 @@ public class FluxoRealizacaoCompraCartao {
 			 * tipo de pagamento específico.
 			 */
 
-			return compraRepository
-					.save(basicoDaCompra.comCartao(request));
+			return compraRepository.save(basicoDaCompra.comCartao(request));
 		});
 
-		Result<RuntimeException, String> resultadoIntegracaoCartao = remoteHttpClient
+		Result<RuntimeException, String> resultadoIntegracao = remoteHttpClient
 				.execute(() -> {
 
 					/*
@@ -144,24 +132,24 @@ public class FluxoRealizacaoCompraCartao {
 
 						return proximoGateway.get();
 					})
-					/*
-					 * A ordem aqui importa. O primeiro decorator é aplicado
-					 * primeiro.. Então aqui, se a chamada falha, o 
-					 * circuitBreaker é incrementado e depois rola o retry. Isso 
-					 * quer dizer que se tiver chegado no limte ele nem vai tentar
-					 * a próxima. 
-					 * 
-					 * Só que não rola fazer a política aqui do token bucket estilo amazon,
-					 * para isso acontecer cada falha deveria ser contabilizar no circuitbreaker. 
-					 */
-					.withCircuitBreaker(circuitBreakerCartao)
-					.withRetry(retryCartao)
-					.get();									
+							/*
+							 * A ordem aqui importa. O primeiro decorator é
+							 * aplicado primeiro.. Então aqui, se a chamada
+							 * falha, o circuitBreaker é incrementado e depois
+							 * rola o retry. Isso quer dizer que se tiver
+							 * chegado no limte ele nem vai tentar a próxima.
+							 * 
+							 * Só que não rola fazer a política aqui do token
+							 * bucket estilo amazon, para isso acontecer cada
+							 * falha deveria ser contabilizar no circuitbreaker.
+							 */
+							.withCircuitBreaker(circuitBreakerCartao)
+							.withRetry(retryCartao).get();
 				});
 
 		// @ICP ifSucess
 		// @ICP e ifProblem
-		return resultadoIntegracaoCartao.ifSuccess(idTransacao -> {
+		return resultadoIntegracao.ifSuccess(idTransacao -> {
 
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
 					.adicionaInformacao("request", idTransacao)
@@ -178,38 +166,7 @@ public class FluxoRealizacaoCompraCartao {
 				return novaCompra;
 			});
 
-			Decorators.ofSupplier(() -> {
-				emailsCompra.enviaSucesso(novaCompra);
-				return null;
-			}).withFallback(exception -> {
-				Map<String, String> parametrosEmail = Map.of("codigoConta",
-						novaCompra.getCodigoConta().toString(), "codigoCompra",
-						novaCompra.getCodigo().toString());
-
-				Log5WBuilder.metodo().oQueEstaAcontecendo(
-						"Colocando o email de sucesso para ser disparado via fila")
-						.adicionaInformacao("request", idTransacao)
-						.adicionaInformacao("codigoConta",
-								novaCompra.getCodigoConta().toString())
-						.info(log);
-
-				/*
-				 * O fallback aqui quebrou o constant work pattern. O fluxo
-				 * normal é síncrono e o fluxo alternativo assíncrono. O que vai
-				 * ser mostrado para o cliente? Email foi enviado? Email ainda
-				 * vai ser enviado?
-				 */
-				jmsTemplate.convertAndSend("envia-email-sucesso-compra",
-						parametrosEmail);
-
-				Log5WBuilder.metodo().oQueEstaAcontecendo(
-						"Enviou o email de sucesso para ser disparado via fila")
-						.adicionaInformacao("request", idTransacao)
-						.adicionaInformacao("codigoConta",
-								novaCompra.getCodigoConta().toString())
-						.info(log);
-				return null;
-			}).get();
+			fluxoEnviaEmailSucesso.executa(novaCompra);
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
