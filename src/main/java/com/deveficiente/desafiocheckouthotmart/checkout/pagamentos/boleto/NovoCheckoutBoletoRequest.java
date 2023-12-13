@@ -1,6 +1,8 @@
-package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
+package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto;
 
 import org.hibernate.validator.constraints.br.CPF;
+
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.InfoPadraoCheckoutRequest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

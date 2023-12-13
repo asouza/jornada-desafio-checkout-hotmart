@@ -1,4 +1,4 @@
-package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
+package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto;
 
 import java.time.LocalDate;
 import java.util.UUID;

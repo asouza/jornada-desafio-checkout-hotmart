@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.NovoCheckoutBoletoRequest;
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.NovoCheckoutCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.NovoCheckoutBoletoRequest;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao.NovoCheckoutCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;

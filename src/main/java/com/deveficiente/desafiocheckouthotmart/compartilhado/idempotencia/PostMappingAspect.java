@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.PagaComCartaoCreditoController.Retorno;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao.PagaComCartaoCreditoController.Retorno;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.JsonHelper;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 

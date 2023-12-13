@@ -1,4 +1,4 @@
-package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
+package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import java.util.List;
 import java.util.function.Function;

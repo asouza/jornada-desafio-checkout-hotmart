@@ -1,4 +1,4 @@
-package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
+package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import org.hibernate.validator.constraints.CreditCardNumber;
 

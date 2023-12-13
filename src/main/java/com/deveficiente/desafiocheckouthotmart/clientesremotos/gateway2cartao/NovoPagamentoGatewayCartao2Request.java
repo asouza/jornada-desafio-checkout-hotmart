@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.NovoCheckoutCartaoRequest;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao.NovoCheckoutCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
