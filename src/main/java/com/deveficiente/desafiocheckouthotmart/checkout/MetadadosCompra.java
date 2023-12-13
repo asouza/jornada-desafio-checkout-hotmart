@@ -33,6 +33,11 @@ public class MetadadosCompra {
 	private InfoCompraCartao infoCompraCartao;
 	@Embedded
 	private InfoCompraBoleto infoCompraBoleto;
+	
+	@Deprecated
+	public MetadadosCompra() {
+		// TODO Auto-generated constructor stub
+	}
 
 	public MetadadosCompra(Compra compra) {
 		this.compra = compra;

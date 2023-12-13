@@ -116,4 +116,8 @@ public class Compra {
 		this.transacoes.add(new TransacaoCompra(this, status));
 	}
 
+	public boolean pertenceConta(Conta outraConta) {
+		return this.conta.equals(outraConta);
+	}
+
 }
