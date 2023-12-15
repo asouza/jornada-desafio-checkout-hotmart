@@ -53,17 +53,28 @@ public class CallbackLiberacaoBoletoController {
 		if (!compra.pertenceConta(conta)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-
+		
+		Steps fluxoBoletoGerado = stpesRegister.execute("Fluxo envia email de boleto",compra.getCodigo().toString());
+		
 		if (statusBoletoSimples.equals(StatusBoletoSimples.opened)) {
-			boolean adicionou = executaTransacao.comRetorno(() -> {
-				return compra.adicionaTransacaoCondicional(
-						StatusCompra.boleto_gerado);
-			});
+					fluxoBoletoGerado.executeOnlyOnce("adicionaTransacao", 
+						() -> {
+							return executaTransacao.comRetorno(() -> {
+								return compra.adicionaTransacaoCondicional(
+										StatusCompra.boleto_gerado);
+							});								
+						});
+					
+					fluxoBoletoGerado.executeOnlyOnce("enviaEmail", 
+						() -> {
+								emailsCompra.mandaBoleto(compra);
+						});																			
+										
+		}				
 
-			if (adicionou) {
-				emailsCompra.mandaBoleto(compra);
-			}
-		}
+
+		
+		
 
 	}
 }
