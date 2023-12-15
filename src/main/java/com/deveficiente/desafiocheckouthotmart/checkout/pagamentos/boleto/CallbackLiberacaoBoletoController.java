@@ -9,29 +9,38 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
+import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
+import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
+import com.deveficiente.desafiocheckouthotmart.checkout.StatusCompra;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
-
-
 
 @RestController
 public class CallbackLiberacaoBoletoController {
 
 	private ContaRepository contaRepository;
 	private CompraRepository compraRepository;
+	private ExecutaTransacao executaTransacao;
+	private EmailsCompra emailsCompra;
 
 	public CallbackLiberacaoBoletoController(ContaRepository contaRepository,
-			CompraRepository compraRepository) {
+			CompraRepository compraRepository,
+			ExecutaTransacao executaTransacao, EmailsCompra emailsCompra) {
 		super();
 		this.contaRepository = contaRepository;
 		this.compraRepository = compraRepository;
+		this.executaTransacao = executaTransacao;
+		this.emailsCompra = emailsCompra;
 	}
 
 	@PostMapping("/conta/{codigoConta}/pagamentos/boletos/pendentes")
 	public void executa(@PathVariable("codigoConta") String codigoConta,
-			@UUID String codigoBoleto) {
-		
+			@UUID String codigoBoleto,
+			StatusBoletoSimples statusBoletoSimples) {
+
 		Compra compra = OptionalToHttpStatusException.execute(
 				compraRepository.buscaPorCodigoBoleto(codigoBoleto), 404,
 				"Não existe compra para este boleto");
@@ -44,8 +53,17 @@ public class CallbackLiberacaoBoletoController {
 		if (!compra.pertenceConta(conta)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-		
-		System.out.println("vai processar...");
+
+		if (statusBoletoSimples.equals(StatusBoletoSimples.opened)) {
+			boolean adicionou = executaTransacao.comRetorno(() -> {
+				return compra.adicionaTransacaoCondicional(
+						StatusCompra.boleto_gerado);
+			});
+
+			if (adicionou) {
+				emailsCompra.mandaBoleto(compra);
+			}
+		}
 
 	}
 }

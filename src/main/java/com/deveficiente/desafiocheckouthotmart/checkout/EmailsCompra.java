@@ -69,4 +69,27 @@ public class EmailsCompra {
 
 	}
 
+	public void mandaBoleto(Compra compra) {
+		String body = dynamicTemplateRunner.buildTemplate(
+				"template-email-boleto-gerado.html",
+				Map.of("compra", compra));
+
+		@ICP
+		Provider1EmailRequest emailRequest = new Provider1EmailRequest(
+				"Compra aprovada", "checkout@hotmart.com", compra.getConta().getEmail(),
+				body);
+
+		Log5WBuilder.metodo().oQueEstaAcontecendo("Vai enviar o email")
+				.adicionaInformacao("codigo da compra",
+						compra.getCodigo().toString())
+				.adicionaInformacao("email", emailRequest.toString()).info(log);
+
+		provider1EmailClient.sendEmail(emailRequest);
+
+		Log5WBuilder.metodo().oQueEstaAcontecendo("Enviou o email")
+				.adicionaInformacao("codigo da compra",
+						compra.getCodigo().toString())
+				.info(log);		
+	}
+
 }

@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Email de nova compra</title>
+</head>
+<body>
+     <p>Geramos seu boleto. <span th:text="${compra.metadados.buscaInfoCompraBoleto().get().codigoBoleto}">Texto que não vai aparecer</span></p>
+</body>
+</html>

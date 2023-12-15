@@ -57,7 +57,8 @@ public class PagaComBoletoController {
 	}
 
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}/boleto")
-	public Map<String, String> executa(@PathVariable("codigoProduto") String codigoProduto,
+	public Map<String, String> executa(
+			@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutBoletoRequest request) {
 
@@ -85,7 +86,10 @@ public class PagaComBoletoController {
 
 		return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
 				"ultimoStatus",
-				compraCriada.getUltimaTransacaoRegistrada().getStatus().toString());
+				compraCriada.getUltimaTransacaoRegistrada().getStatus()
+						.toString(),
+				"codigoBoleto", compraCriada.getMetadados()
+						.buscaInfoCompraBoleto().get().getCodigoBoleto());
 
 	}
 }

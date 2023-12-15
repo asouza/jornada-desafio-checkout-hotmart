@@ -7,8 +7,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
@@ -37,6 +40,10 @@ public class Compra {
 			CascadeType.MERGE })
 	private List<TransacaoCompra> transacoes = new ArrayList<>();
 	private UUID codigo = UUID.randomUUID();
+	
+	
+	private static final Logger log = LoggerFactory.getLogger(Compra.class);
+
 
 	@Deprecated
 	public Compra() {
@@ -114,6 +121,33 @@ public class Compra {
 	public void adicionaTransacao(StatusCompra status) {
 		assertTemTransacaoIniciada();	
 		this.transacoes.add(new TransacaoCompra(this, status));
+	}
+	
+	/**
+	 * Adiciona uma transacao apenas se não tiver uma com o status
+	 * em questão.
+	 * 
+	 * @param status
+	 * @return se adicionou
+	 */
+	public boolean adicionaTransacaoCondicional(StatusCompra status) {
+		assertTemTransacaoIniciada();	
+		
+		if(temTransacaoComStatus(status)) {
+			//TODO aqui devia ser debug
+			Log5WBuilder
+				.metodo()
+				.oQueEstaAcontecendo("Não adicionou transacao")
+				.adicionaInformacao("status", status.toString())
+				.adicionaInformacao("codigoCompra", this.codigo.toString())
+				.info(log);
+			
+			return false;
+		}
+		
+		this.transacoes.add(new TransacaoCompra(this, status));
+		
+		return true;
 	}
 
 	public boolean pertenceConta(Conta outraConta) {
