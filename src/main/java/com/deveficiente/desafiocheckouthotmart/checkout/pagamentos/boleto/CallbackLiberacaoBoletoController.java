@@ -1,6 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto;
 
 import org.hibernate.validator.constraints.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,8 +16,13 @@ import com.deveficiente.desafiocheckouthotmart.checkout.StatusCompra;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowEntity;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowRegister;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowSteps;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
+
+import jakarta.persistence.EntityManager;
 
 @RestController
 public class CallbackLiberacaoBoletoController {
@@ -25,15 +31,20 @@ public class CallbackLiberacaoBoletoController {
 	private CompraRepository compraRepository;
 	private ExecutaTransacao executaTransacao;
 	private EmailsCompra emailsCompra;
+	private BusinessFlowRegister businessFlowRegister;
+	@Autowired
+	private EntityManager manager;
 
 	public CallbackLiberacaoBoletoController(ContaRepository contaRepository,
 			CompraRepository compraRepository,
-			ExecutaTransacao executaTransacao, EmailsCompra emailsCompra) {
+			ExecutaTransacao executaTransacao, EmailsCompra emailsCompra,
+			BusinessFlowRegister businessFlowRegister) {
 		super();
 		this.contaRepository = contaRepository;
 		this.compraRepository = compraRepository;
 		this.executaTransacao = executaTransacao;
 		this.emailsCompra = emailsCompra;
+		this.businessFlowRegister = businessFlowRegister;
 	}
 
 	@PostMapping("/conta/{codigoConta}/pagamentos/boletos/pendentes")
@@ -53,28 +64,27 @@ public class CallbackLiberacaoBoletoController {
 		if (!compra.pertenceConta(conta)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-		
-		Steps fluxoBoletoGerado = stpesRegister.execute("Fluxo envia email de boleto",compra.getCodigo().toString());
-		
+
+		BusinessFlowSteps fluxoBoletoGerado = businessFlowRegister.execute(
+				"Fluxo envia email de boleto", compra.getCodigo().toString());
+
 		if (statusBoletoSimples.equals(StatusBoletoSimples.opened)) {
-					fluxoBoletoGerado.executeOnlyOnce("adicionaTransacao", 
-						() -> {
-							return executaTransacao.comRetorno(() -> {
-								return compra.adicionaTransacaoCondicional(
-										StatusCompra.boleto_gerado);
-							});								
-						});
-					
-					fluxoBoletoGerado.executeOnlyOnce("enviaEmail", 
-						() -> {
-								emailsCompra.mandaBoleto(compra);
-						});																			
-										
-		}				
+			fluxoBoletoGerado.executeOnlyOnce("adicionaTransacao", () -> {
+				System.out.println("Dizendo que o boleto foi gerado");
+				return executaTransacao.comRetorno(() -> {
+					Compra compraNaNovaTransacao = manager.merge(compra);
+					return compraNaNovaTransacao.adicionaTransacaoCondicional(
+							StatusCompra.boleto_gerado);
+				});
+			});
 
+			fluxoBoletoGerado.executeOnlyOnce("enviaEmail", () -> {
+				System.out.println("Enviando email de compra");
+				emailsCompra.mandaBoleto(compra);
+				return "boleto enviado";
+			});
 
-		
-		
+		}
 
 	}
 }
