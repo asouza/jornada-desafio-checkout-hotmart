@@ -8,7 +8,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
-import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotBlank;
 
 @Component
@@ -44,6 +43,14 @@ public class BusinessFlowRegister {
 		BusinessFlowEntity newFlow;
 		try {
 
+			/*
+			 * Aqui executa a transação no menor escopo possível
+			 * pq se der um problema de integridade ele marca a 
+			 * transação como problemática... E aí lasca o resto. 
+			 * 
+			 * Então, se der problema, a próxima lógica precisa acontecer
+			 * em outro contexto transacional.
+			 */
 			newFlow = transactionTemplate.execute(status -> {
 				return businessFlowRepository
 						.save(new BusinessFlowEntity(flowName, uniqueFlowCode));				

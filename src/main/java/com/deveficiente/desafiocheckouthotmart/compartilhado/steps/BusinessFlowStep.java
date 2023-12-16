@@ -1,16 +1,13 @@
 package com.deveficiente.desafiocheckouthotmart.compartilhado.steps;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
-import org.springframework.util.Assert;
-
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -28,25 +25,27 @@ public class BusinessFlowStep {
 	@PastOrPresent
 	@NotNull
 	private LocalDateTime createdAt = LocalDateTime.now();
-	@PastOrPresent	
-	@Version
-	private LocalDateTime finishedAt;
 	private String executionResult;
-	
+	@NotBlank
+	@Column(unique = true)
+	private String appUniqueKey;
+
 	@Deprecated
 	public BusinessFlowStep() {
 		// TODO Auto-generated constructor stub
 	}
-	
+
 	/*
-	 * aqui precisaria adicionar uma chave composta na tabela
-	 * para garantir a integridade de stepName e businessFlow
+	 * aqui precisaria adicionar uma chave composta na tabela para garantir a
+	 * integridade de stepName e businessFlow
 	 */
 
 	public BusinessFlowStep(BusinessFlowEntity businessFlowEntity,
-			String stepName) {
-				this.businessFlowEntity = businessFlowEntity;
-				this.stepName = stepName;
+			String stepName,Object executionResult) {
+		this.businessFlowEntity = businessFlowEntity;
+		this.stepName = stepName;
+		this.appUniqueKey = businessFlowEntity.getUniqueFlowCode() + "_" + stepName;
+		this.executionResult = executionResult.toString();
 	}
 
 	@Override
@@ -82,27 +81,8 @@ public class BusinessFlowStep {
 		return true;
 	}
 
-	
-	/**
-	 * 
-	 * @param executionResult
-	 * @return toString of result
-	 */
-	public String finish(Object executionResult) {
-		Assert.state(Objects.isNull(this.finishedAt), "Step does only accept one finish");
-		
-		this.finishedAt = LocalDateTime.now();
-		this.executionResult = executionResult.toString();
-		
-		return this.executionResult;
-	}
-
 	public String getExecutionResult() {
-		Assert.notNull(this.finishedAt, "You should not invoke this method while the step is not finished");
-		
 		return this.executionResult;
 	}
-	
-	
 
 }

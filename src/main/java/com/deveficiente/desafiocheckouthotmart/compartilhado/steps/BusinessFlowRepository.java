@@ -12,7 +12,7 @@ public interface BusinessFlowRepository extends JpaRepository<BusinessFlowEntity
 
 	BusinessFlowEntity getByUniqueFlowCode(@NotBlank String uniqueFlowCode);
 
-	@Query("select bfs from BusinessFlowStep bfs where finishedAt is not null and stepName = :stepName and bfs.businessFlowEntity.id = :businessFlowId")
-	Optional<BusinessFlowStep> findFinishedStepByName(@Param("stepName") String stepName, @Param("businessFlowId") Long businessFlowId);
+	@Query("select bfs from BusinessFlowStep bfs where stepName = :stepName and bfs.businessFlowEntity.id = :businessFlowId")
+	Optional<BusinessFlowStep> findStepByName(@Param("stepName") String stepName, @Param("businessFlowId") Long businessFlowId);
 
 }

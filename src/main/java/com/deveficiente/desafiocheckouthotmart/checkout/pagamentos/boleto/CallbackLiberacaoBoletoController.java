@@ -70,7 +70,7 @@ public class CallbackLiberacaoBoletoController {
 
 		if (statusBoletoSimples.equals(StatusBoletoSimples.opened)) {
 			fluxoBoletoGerado.executeOnlyOnce("adicionaTransacao", () -> {
-				System.out.println("Dizendo que o boleto foi gerado");
+				System.out.println("Adicionando a transacao referenciando boleto gerado");
 				return executaTransacao.comRetorno(() -> {
 					Compra compraNaNovaTransacao = manager.merge(compra);
 					return compraNaNovaTransacao.adicionaTransacaoCondicional(
@@ -80,6 +80,7 @@ public class CallbackLiberacaoBoletoController {
 
 			fluxoBoletoGerado.executeOnlyOnce("enviaEmail", () -> {
 				System.out.println("Enviando email de compra");
+				//TODO aqui o melhor é usar o novo objeto de compra
 				emailsCompra.mandaBoleto(compra);
 				return "boleto enviado";
 			});

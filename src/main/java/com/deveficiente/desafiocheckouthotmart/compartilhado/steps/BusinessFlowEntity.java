@@ -67,21 +67,28 @@ public class BusinessFlowEntity {
 
 
 
-	public BusinessFlowStep registerStep(String stepName) {
-		BusinessFlowStep newStep = new BusinessFlowStep(this,stepName);		
-		
-		if(this.steps.add(newStep)){
+	/**
+	 * 
+	 * @param stepName
+	 * @param executionResult
+	 * @return true for successful registration.  
+	 */
+	public BusinessFlowStep registerStep(String stepName,Object executionResult) {
+		BusinessFlowStep newStep = new BusinessFlowStep(this,stepName,executionResult);						
+		if(this.steps.add(newStep)) {
 			return newStep;
 		}
 		
-		//Se chegou aqui é pq já existe um
-		return this
-			.steps
-			.stream()
-			.filter(step -> step.equals(newStep))
-			.findFirst()
-			.get();
-
+		//exist the Step for sure
+		
+		return this.steps.stream()
+				.filter(step -> step.equals(newStep))
+				.findFirst()
+				.get();
+	}
+	
+	public String getUniqueFlowCode() {
+		return uniqueFlowCode;
 	}
 
 
