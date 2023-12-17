@@ -154,4 +154,8 @@ public class Compra {
 		return this.conta.equals(outraConta);
 	}
 
+	public Long getId() {
+		return id;
+	}
+
 }

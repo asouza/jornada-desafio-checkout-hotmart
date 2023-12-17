@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,7 @@ import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
@@ -36,6 +38,8 @@ public class PagaComBoletoController {
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
 	private RegistraNovaContaService registraNovaContaService;
+	@Autowired
+	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComBoletoController.class);
@@ -80,16 +84,26 @@ public class PagaComBoletoController {
 
 		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
 
+		/*
+		 * Com esse lance do controle de fluxo, tem um monte de transacao rolando...
+		 * O melhor parece ser retornar ids e o proximo fluxo reconstroi o objeto. 
+		 */
 		@ICP
 		Compra compraCriada = fluxoRealizacaoCompraBoleto
 				.executa(basicoDaCompra, request);
+		
+		return executaTransacao.comRetorno(() -> {
+			Compra compraAtualizada = manager.merge(compraCriada);
+			
+			return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
+					"ultimoStatus",
+					compraAtualizada.getUltimaTransacaoRegistrada().getStatus()
+					.toString(),
+					"codigoBoleto", compraAtualizada.getMetadados()
+					.buscaInfoCompraBoleto().get().getCodigoBoleto());
+			
+		});
 
-		return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
-				"ultimoStatus",
-				compraCriada.getUltimaTransacaoRegistrada().getStatus()
-						.toString(),
-				"codigoBoleto", compraCriada.getMetadados()
-						.buscaInfoCompraBoleto().get().getCodigoBoleto());
 
 	}
 }

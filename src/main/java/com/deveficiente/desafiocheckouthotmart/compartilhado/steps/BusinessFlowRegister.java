@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.constraints.NotBlank;
 
 @Component
@@ -15,15 +16,17 @@ public class BusinessFlowRegister {
 
 	private BusinessFlowRepository businessFlowRepository;
 	private TransactionTemplate transactionTemplate;
+	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(BusinessFlowRegister.class);
 
 	public BusinessFlowRegister(BusinessFlowRepository businessFlowRepository,
-			TransactionTemplate transactionTemplate) {
+			TransactionTemplate transactionTemplate, EntityManager manager) {
 		super();
 		this.businessFlowRepository = businessFlowRepository;
 		this.transactionTemplate = transactionTemplate;
+		this.manager = manager;
 	}
 
 	/**
@@ -44,16 +47,16 @@ public class BusinessFlowRegister {
 		try {
 
 			/*
-			 * Aqui executa a transação no menor escopo possível
-			 * pq se der um problema de integridade ele marca a 
-			 * transação como problemática... E aí lasca o resto. 
+			 * Aqui executa a transação no menor escopo possível pq se der um
+			 * problema de integridade ele marca a transação como
+			 * problemática... E aí lasca o resto.
 			 * 
-			 * Então, se der problema, a próxima lógica precisa acontecer
-			 * em outro contexto transacional.
+			 * Então, se der problema, a próxima lógica precisa acontecer em
+			 * outro contexto transacional.
 			 */
 			newFlow = transactionTemplate.execute(status -> {
 				return businessFlowRepository
-						.save(new BusinessFlowEntity(flowName, uniqueFlowCode));				
+						.save(new BusinessFlowEntity(flowName, uniqueFlowCode));
 			});
 		} catch (DataIntegrityViolationException e) {
 
@@ -68,7 +71,8 @@ public class BusinessFlowRegister {
 					.getByUniqueFlowCode(uniqueFlowCode);
 		}
 
-		return new BusinessFlowSteps(newFlow, transactionTemplate, businessFlowRepository);
+		return new BusinessFlowSteps(newFlow, transactionTemplate,
+				businessFlowRepository,manager);
 	}
 
 }

@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
@@ -24,6 +25,8 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.PartialClass;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowRegister;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowSteps;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.decorators.Decorators;
@@ -53,6 +56,9 @@ public class FluxoRealizacaoCompraBoleto {
 	private FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso;
 	@ICP
 	private BoletoApiClient boletoApiClient;
+	
+	@Autowired
+	private BusinessFlowRegister businessFlowRegister;
 
 	public FluxoRealizacaoCompraBoleto(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
@@ -87,42 +93,53 @@ public class FluxoRealizacaoCompraBoleto {
 		LocalDate dataExpiracao = LocalDate.now().plusDays(3);
 		
 
-		@ICP
-		Compra novaCompra = executaTransacao.comRetorno(() -> {
-			/*
-			 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
-			 * criar uma nova compra em função da forma de pagamento. Então já
-			 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
-			 * relacionar com uma conta e uma oferta e depois complementar com o
-			 * tipo de pagamento específico.
-			 */
-
-			return compraRepository
-					.save(basicoDaCompra.comBoleto(request, codigoBoleto,dataExpiracao));
+		BusinessFlowSteps businessFlowSteps = businessFlowRegister.execute("compraComBoleto", request.getCpf());
+		
+		
+		String idCompra = businessFlowSteps.executeOnlyOnce("criaCompra", () -> {			
+			System.out.println("Gravando nova compra com boleto...");
+			@ICP
+			Compra novaCompra = executaTransacao.comRetorno(() -> {
+				/*
+				 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
+				 * criar uma nova compra em função da forma de pagamento. Então já
+				 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
+				 * relacionar com uma conta e uma oferta e depois complementar com o
+				 * tipo de pagamento específico.
+				 */
+				
+				return compraRepository
+						.save(basicoDaCompra.comBoleto(request, codigoBoleto,dataExpiracao));
+			});
+			
+			return novaCompra.getId();
 		});
+		
+		Compra compraGravada 
+			= compraRepository.findById(Long.valueOf(idCompra)).get();
+				
 
 		Result<RuntimeException, String> resultadoIntegracao = remoteHttpClient
-				.execute(() -> {
-
+				.execute(() -> {	
 					/*
-					 * Aqui antes eu tava recebendo uma request e uma oferta. Só
-					 * que eu tenho um padrão que preciso documentar, se eu já
-					 * computei uma variavel em função de outras, eu não posso
-					 * mais usar aquelas variaveis no mesmo fluxo. Se eu uso,
-					 * pode ser um sinal que alguma coisa ficou mal desenhada.
+					 * O flow aqui o id da transação
 					 */
-					return Decorators.ofSupplier(() -> {
-						Log5WBuilder.metodo()
-								.oQueEstaAcontecendo(
-										"Vai processar o pagamento")
-								.adicionaInformacao("compra",
-										novaCompra.toString())
-								.info(log);
-
-						return boletoApiClient.executa(new NovoBoletoRequest(novaCompra));
-					})
-					.withCircuitBreaker(circuitBreakerDefault)
-					.withRetry(retryDefault).get();
+					return businessFlowSteps.executeOnlyOnce("integraApiBoleto", () -> {			
+						System.out.println("Realizando integracao com a api de boleto...");
+						return Decorators.ofSupplier(() -> {
+							Log5WBuilder.metodo()
+							.oQueEstaAcontecendo(
+									"Vai processar o pagamento")
+							.adicionaInformacao("compra",
+									compraGravada.toString())
+							.info(log);
+							
+							return boletoApiClient.executa(new NovoBoletoRequest(compraGravada));
+						})
+						.withCircuitBreaker(circuitBreakerDefault)
+						.withRetry(retryDefault).get();
+					});					
+					
 				});
 
 		// @ICP ifSucess
@@ -130,10 +147,10 @@ public class FluxoRealizacaoCompraBoleto {
 		return resultadoIntegracao.ifSuccess(idTransacao -> {
 
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
-					.adicionaInformacao("codigoCompra", novaCompra.getCodigo().toString())
+					.adicionaInformacao("codigoCompra", compraGravada.getCodigo().toString())
 					.adicionaInformacao("idTransacao", idTransacao)
 					.adicionaInformacao("codigoConta",
-							novaCompra.getCodigoConta().toString())
+							compraGravada.getCodigoConta().toString())
 					.info(log);
 
 			// deveria logar que vai atualizar a compra. Já que isso aqui vai
@@ -141,24 +158,29 @@ public class FluxoRealizacaoCompraBoleto {
 			// so que cansa mesmo hehe. Como melhorar?
 
 			executaTransacao.comRetorno(() -> {
-				novaCompra.adicionaTransacao(StatusCompra.gerando_boleto);
-				return novaCompra;
+				compraGravada.adicionaTransacao(StatusCompra.gerando_boleto);
+				return compraGravada;
 			});
 
-			return novaCompra;
+			return compraGravada;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
-			emailsCompra.enviaEmailFalha(novaCompra);
+			businessFlowSteps.executeOnlyOnce("enviaEmailDeFalha", () -> {
+				System.out.println("Enviando email de falha");
+				emailsCompra.enviaEmailFalha(compraGravada);
+				return "emailFalhaEnviado";
+				
+			});
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
-			return novaCompra;
+			return compraGravada;
 		}).ifProblem(Exception.class, e -> {
 			Log5WBuilder.metodo().oQueEstaAcontecendo(
 					"Aconteceu um problema inesperado na integracao com a api de boleto")
 					.adicionaInformacao("codigoCompra",
-							novaCompra.getCodigo().toString())
+							compraGravada.getCodigo().toString())
 					.debug(log);
-			return novaCompra;
+			return compraGravada;
 		}).execute().get();
 	}
 

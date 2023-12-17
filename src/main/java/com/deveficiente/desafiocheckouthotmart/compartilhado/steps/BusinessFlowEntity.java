@@ -20,6 +20,7 @@ public class BusinessFlowEntity {
 	private Long id;
 	private @NotBlank String flowName;
 	@Column(unique = true)
+	//TODO tem que criar uma chave unica unindo flowName + uniqueFlowCode
 	private @NotBlank String uniqueFlowCode;
 	@OneToMany(mappedBy = "businessFlowEntity",cascade = {CascadeType.PERSIST,CascadeType.MERGE})
 	private Set<BusinessFlowStep> steps = new HashSet<>();
