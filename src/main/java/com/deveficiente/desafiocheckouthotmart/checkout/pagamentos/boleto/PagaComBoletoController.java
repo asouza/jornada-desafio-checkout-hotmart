@@ -38,21 +38,22 @@ public class PagaComBoletoController {
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
 	private RegistraNovaContaService registraNovaContaService;
-	@Autowired
 	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComBoletoController.class);
 
 	public PagaComBoletoController(ExecutaTransacao executaTransacao,
-			FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
-			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
-			RegistraNovaContaService registraNovaContaService) {
+			@ICP FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
+			@ICP BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
+			RegistraNovaContaService registraNovaContaService,
+			EntityManager manager) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.fluxoRealizacaoCompraBoleto = fluxoRealizacaoCompraBoleto;
 		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
 		this.registraNovaContaService = registraNovaContaService;
+		this.manager = manager;
 	}
 
 	@InitBinder
@@ -85,25 +86,25 @@ public class PagaComBoletoController {
 		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
 
 		/*
-		 * Com esse lance do controle de fluxo, tem um monte de transacao rolando...
-		 * O melhor parece ser retornar ids e o proximo fluxo reconstroi o objeto. 
+		 * Com esse lance do controle de fluxo, tem um monte de transacao
+		 * rolando... O melhor parece ser retornar ids e o proximo fluxo
+		 * reconstroi o objeto.
 		 */
 		@ICP
 		Compra compraCriada = fluxoRealizacaoCompraBoleto
 				.executa(basicoDaCompra, request);
-		
+
 		return executaTransacao.comRetorno(() -> {
 			Compra compraAtualizada = manager.merge(compraCriada);
-			
+
 			return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
 					"ultimoStatus",
 					compraAtualizada.getUltimaTransacaoRegistrada().getStatus()
-					.toString(),
+							.toString(),
 					"codigoBoleto", compraAtualizada.getMetadados()
-					.buscaInfoCompraBoleto().get().getCodigoBoleto());
-			
-		});
+							.buscaInfoCompraBoleto().get().getCodigoBoleto());
 
+		});
 
 	}
 }

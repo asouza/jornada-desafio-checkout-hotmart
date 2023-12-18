@@ -11,6 +11,12 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.validation.constraints.NotBlank;
 
+/*
+ * - O step precisa ter um controle fino de que começou a ser executado e pode ter parado no meio. 
+ * - Da para ter step com expiração de execução
+ * - Uma consequencia negativa é um monte de lazy load explodindo...
+ */
+
 @Component
 public class BusinessFlowRegister {
 
