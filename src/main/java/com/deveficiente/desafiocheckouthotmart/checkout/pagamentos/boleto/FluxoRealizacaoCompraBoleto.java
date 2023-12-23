@@ -1,9 +1,5 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto;
 
-import java.time.LocalDate;
-import java.util.UUID;
-import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +13,6 @@ import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
 import com.deveficiente.desafiocheckouthotmart.checkout.StatusCompra;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.BoletoApiClient;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.boletosimples.NovoBoletoRequest;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.CartaoGateway1Client;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Erro500Exception;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
@@ -56,16 +51,20 @@ public class FluxoRealizacaoCompraBoleto {
 	private FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso;
 	@ICP
 	private BoletoApiClient boletoApiClient;
-	
+	@ICP
+	private ConfiguracaoBoleto configuracaoBoleto;
+
 	@Autowired
 	private BusinessFlowRegister businessFlowRegister;
 
 	public FluxoRealizacaoCompraBoleto(ExecutaTransacao executaTransacao,
 			@ICP CompraRepository compraRepository,
 			RemoteHttpClient remoteHttpClient, Retry retryDefault,
-			@ICP EmailsCompra emailsCompra, CircuitBreaker circuitBreakerDefault,
+			@ICP EmailsCompra emailsCompra,
+			CircuitBreaker circuitBreakerDefault,
 			@ICP FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso,
-			@ICP BoletoApiClient boletoApiClient) {
+			@ICP BoletoApiClient boletoApiClient,
+			ConfiguracaoBoleto configuracaoBoleto) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -75,6 +74,7 @@ public class FluxoRealizacaoCompraBoleto {
 		this.circuitBreakerDefault = circuitBreakerDefault;
 		this.fluxoEnviaEmailSucesso = fluxoEnviaEmailSucesso;
 		this.boletoApiClient = boletoApiClient;
+		this.configuracaoBoleto = configuracaoBoleto;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -89,77 +89,98 @@ public class FluxoRealizacaoCompraBoleto {
 	public Compra executa(CompraBuilderPasso2 basicoDaCompra,
 			NovoCheckoutBoletoRequest request) {
 
-		String codigoBoleto = UUID.randomUUID().toString();
-		LocalDate dataExpiracao = LocalDate.now().plusDays(3);
-		
+		BusinessFlowSteps businessFlowSteps = businessFlowRegister
+				.execute("compraComBoleto", basicoDaCompra
+						.getCombinacaoContaOferta().concat(request.getCpf()));
 
-		BusinessFlowSteps businessFlowSteps = businessFlowRegister.execute("compraComBoleto", request.getCpf());
-		
-		
-		String idCompra = businessFlowSteps.executeOnlyOnce("criaCompra", () -> {			
-			System.out.println("Gravando nova compra com boleto...");
-			@ICP
-			Compra novaCompra = executaTransacao.comRetorno(() -> {
-				/*
-				 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
-				 * criar uma nova compra em função da forma de pagamento. Então já
-				 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
-				 * relacionar com uma conta e uma oferta e depois complementar com o
-				 * tipo de pagamento específico.
-				 */
-				
-				return compraRepository
-						.save(basicoDaCompra.comBoleto(request, codigoBoleto,dataExpiracao));
-			});
-			
-			return novaCompra.getId();
-		});
-		
-		Compra compraGravada 
-			= compraRepository.findById(Long.valueOf(idCompra)).get();
-				
+		String idCompra = businessFlowSteps.executeOnlyOnce("criaCompra",
+				() -> {
+					System.out.println("Gravando nova compra com boleto...");
+					@ICP
+					Compra novaCompra = executaTransacao.comRetorno(() -> {
+						/*
+						 * O builder aqui é pq eu já sei que vai ter maneiras
+						 * diferentes de criar uma nova compra em função da
+						 * forma de pagamento. Então já tentei criar um
+						 * mecanismo pode ser evoluido. O basico é sempre
+						 * relacionar com uma conta e uma oferta e depois
+						 * complementar com o tipo de pagamento específico.
+						 */
+
+						return compraRepository.save(basicoDaCompra
+								.comBoleto(request, configuracaoBoleto));
+					});
+
+					return novaCompra.getId();
+				});
+
+		Compra compraGravada = compraRepository.findById(Long.valueOf(idCompra))
+				.get();
 
 		Result<RuntimeException, String> resultadoIntegracao = remoteHttpClient
-				.execute(() -> {	
+				.execute(() -> {
 					/*
 					 * O flow aqui o id da transação
 					 */
-					return businessFlowSteps.executeOnlyOnce("integraApiBoleto", () -> {			
-						System.out.println("Realizando integracao com a api de boleto...");
-						return Decorators.ofSupplier(() -> {
-							Log5WBuilder.metodo()
-							.oQueEstaAcontecendo(
-									"Vai processar o pagamento")
-							.adicionaInformacao("compra",
-									compraGravada.toString())
-							.info(log);
-							
-							return boletoApiClient.executa(new NovoBoletoRequest(compraGravada));
-						})
-						.withCircuitBreaker(circuitBreakerDefault)
-						.withRetry(retryDefault).get();
-					});					
-					
+					return businessFlowSteps.executeOnlyOnce("integraApiBoleto",
+							() -> {
+								System.out.println(
+										"Realizando integracao com a api de boleto...");
+								return Decorators.ofSupplier(() -> {
+									Log5WBuilder.metodo()
+											.oQueEstaAcontecendo(
+													"Vai processar o pagamento")
+											.adicionaInformacao("compra",
+													compraGravada.toString())
+											.info(log);
+
+									return boletoApiClient
+											.executa(new NovoBoletoRequest(
+													compraGravada));
+								}).withCircuitBreaker(circuitBreakerDefault)
+										.withRetry(retryDefault).get();
+							});
+
 				});
 
 		// @ICP ifSucess
 		// @ICP e ifProblem
 		return resultadoIntegracao.ifSuccess(idTransacao -> {
 
-			Log5WBuilder.metodo().oQueEstaAcontecendo("Processou o pagamento")
-					.adicionaInformacao("codigoCompra", compraGravada.getCodigo().toString())
-					.adicionaInformacao("idTransacao", idTransacao)
-					.adicionaInformacao("codigoConta",
-							compraGravada.getCodigoConta().toString())
-					.info(log);
+			businessFlowSteps.executeOnlyOnce("adicionaTransacao", () -> {
+				Log5WBuilder.metodo()
+						.oQueEstaAcontecendo("Processou o pagamento")
+						.adicionaInformacao("codigoCompra",
+								compraGravada.getCodigo().toString())
+						.adicionaInformacao("idTransacao", idTransacao)
+						.adicionaInformacao("codigoConta",
+								compraGravada.getCodigoConta().toString())
+						.info(log);
 
-			// deveria logar que vai atualizar a compra. Já que isso aqui vai
-			// parar no banco de dados.
-			// so que cansa mesmo hehe. Como melhorar?
+				// deveria logar que vai atualizar a compra. Já que isso aqui
+				// vai
+				// parar no banco de dados.
+				// so que cansa mesmo hehe. Como melhorar?
 
-			executaTransacao.comRetorno(() -> {
-				compraGravada.adicionaTransacao(StatusCompra.gerando_boleto);
-				return compraGravada;
+				Log5WBuilder.metodo().oQueEstaAcontecendo(
+						"Vai alterar o status da compra para gerando boleto")
+						.adicionaInformacao("codigoCompra",
+								compraGravada.getCodigo().toString())
+						.info(log);
+
+				Long idCompraAlterada = executaTransacao.comRetorno(() -> {
+					compraGravada
+							.adicionaTransacao(StatusCompra.gerando_boleto);
+					return compraGravada.getId();
+				});
+
+				Log5WBuilder.metodo().oQueEstaAcontecendo(
+						"Alterou o status da compra para gerando boleto")
+						.adicionaInformacao("codigoCompra",
+								compraGravada.getCodigo().toString())
+						.info(log);
+
+				return idCompraAlterada;
 			});
 
 			return compraGravada;
@@ -169,7 +190,7 @@ public class FluxoRealizacaoCompraBoleto {
 				System.out.println("Enviando email de falha");
 				emailsCompra.enviaEmailFalha(compraGravada);
 				return "emailFalhaEnviado";
-				
+
 			});
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.

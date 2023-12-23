@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.ConfiguracaoBoleto;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.NovoCheckoutBoletoRequest;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao.NovoCheckoutCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
@@ -21,6 +22,11 @@ public class CompraBuilder {
 		public CompraBuilderPasso2(Conta conta, Oferta oferta) {
 			this.conta = conta;
 			this.oferta = oferta;
+		}
+
+		public String getCombinacaoContaOferta() {
+			return this.conta.getCodigo().toString()
+					.concat(this.oferta.getCodigo().toString());
 		}
 
 		public Compra comCartao(NovoCheckoutCartaoRequest request) {
@@ -44,11 +50,13 @@ public class CompraBuilder {
 		}
 
 		public Compra comBoleto(NovoCheckoutBoletoRequest request,
-				String codigoBoleto, LocalDate dataExpiracao) {
+				ConfiguracaoBoleto configuracaoBoleto) {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
 				MetadadosCompra metadados = new MetadadosCompra(compra);
 				metadados.setInfoBoleto(new InfoCompraBoleto(request.getCpf(),
-						codigoBoleto, compra.getPreco(), dataExpiracao));
+						configuracaoBoleto.geraCodigoParaBoleto(),
+						compra.getPreco(),
+						configuracaoBoleto.dataExpiracao(LocalDate.now())));
 
 				return metadados;
 			};

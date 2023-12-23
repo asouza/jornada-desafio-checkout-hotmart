@@ -131,6 +131,10 @@ public class Oferta {
 	public List<ValorParcelaMes> getParcelaMes() {
 		return this.valoresParcelas;
 	}
+	
+	public UUID getCodigo() {
+		return codigo;
+	}
 
 	/**
 	 * 
