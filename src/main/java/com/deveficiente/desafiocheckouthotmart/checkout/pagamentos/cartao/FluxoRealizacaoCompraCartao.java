@@ -19,6 +19,8 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.PartialClass;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.RemoteHttpClient;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowRegister;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.steps.BusinessFlowSteps;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.decorators.Decorators;
@@ -50,6 +52,7 @@ public class FluxoRealizacaoCompraCartao {
 	private CircuitBreaker circuitBreakerCartao;
 	@ICP
 	private FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso;
+	private BusinessFlowRegister businessFlowRegister;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
 			CompraRepository compraRepository,
@@ -57,7 +60,8 @@ public class FluxoRealizacaoCompraCartao {
 			CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
 			ProximoGatewayPagamento proximoGatewayPagamento,
 			EmailsCompra emailsCompra, CircuitBreaker circuitBreakerCartao,
-			FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso) {
+			FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso,
+			BusinessFlowRegister businessFlowRegister) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -68,6 +72,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.emailsCompra = emailsCompra;
 		this.circuitBreakerCartao = circuitBreakerCartao;
 		this.fluxoEnviaEmailSucesso = fluxoEnviaEmailSucesso;
+		this.businessFlowRegister = businessFlowRegister;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -96,55 +101,67 @@ public class FluxoRealizacaoCompraCartao {
 //		NovoPagamentoGatewayCartao1Request requestGateway = request
 //				.toPagamentoGatewayCartaoRequest(oferta);
 
-		@ICP
-		Compra novaCompra = executaTransacao.comRetorno(() -> {
-			/*
-			 * O builder aqui é pq eu já sei que vai ter maneiras diferentes de
-			 * criar uma nova compra em função da forma de pagamento. Então já
-			 * tentei criar um mecanismo pode ser evoluido. O basico é sempre
-			 * relacionar com uma conta e uma oferta e depois complementar com o
-			 * tipo de pagamento específico.
-			 */
+		BusinessFlowSteps businessFlow = businessFlowRegister.execute(
+				"compraCartao", basicoDaCompra.getCombinacaoContaOferta());
 
-			return compraRepository.save(basicoDaCompra.comCartao(request));
+		String idNovaCompra = businessFlow.executeOnlyOnce("criaCompra", () -> {
+			return executaTransacao.comRetorno(() -> {
+				/*
+				 * O builder aqui é pq eu já sei que vai ter maneiras diferentes
+				 * de criar uma nova compra em função da forma de pagamento.
+				 * Então já tentei criar um mecanismo pode ser evoluido. O
+				 * basico é sempre relacionar com uma conta e uma oferta e
+				 * depois complementar com o tipo de pagamento específico.
+				 */
+
+				return compraRepository.save(basicoDaCompra.comCartao(request))
+						.getId();
+			});
 		});
+
+		Compra novaCompra = compraRepository
+				.findById(Long.valueOf(idNovaCompra)).get();
 
 		Result<RuntimeException, String> resultadoIntegracao = remoteHttpClient
 				.execute(() -> {
+					
+					return businessFlow.executeOnlyOnce("integraGatewayPagamento", () -> {
+						/*
+						 * Aqui antes eu tava recebendo uma request e uma oferta. Só
+						 * que eu tenho um padrão que preciso documentar, se eu já
+						 * computei uma variavel em função de outras, eu não posso
+						 * mais usar aquelas variaveis no mesmo fluxo. Se eu uso,
+						 * pode ser um sinal que alguma coisa ficou mal desenhada.
+						 */
+						Supplier<String> proximoGateway = proximoGatewayPagamento
+								.proximoGateway(novaCompra);
 
-					/*
-					 * Aqui antes eu tava recebendo uma request e uma oferta. Só
-					 * que eu tenho um padrão que preciso documentar, se eu já
-					 * computei uma variavel em função de outras, eu não posso
-					 * mais usar aquelas variaveis no mesmo fluxo. Se eu uso,
-					 * pode ser um sinal que alguma coisa ficou mal desenhada.
-					 */
-					Supplier<String> proximoGateway = proximoGatewayPagamento
-							.proximoGateway(novaCompra);
+						return Decorators.ofSupplier(() -> {
+							Log5WBuilder.metodo()
+									.oQueEstaAcontecendo(
+											"Vai processar o pagamento")
+									.adicionaInformacao("compra",
+											novaCompra.toString())
+									.info(log);
 
-					return Decorators.ofSupplier(() -> {
-						Log5WBuilder.metodo()
-								.oQueEstaAcontecendo(
-										"Vai processar o pagamento")
-								.adicionaInformacao("compra",
-										novaCompra.toString())
-								.info(log);
+							return proximoGateway.get();
+						})
+						/*
+						 * A ordem aqui importa. O primeiro decorator é
+						 * aplicado primeiro.. Então aqui, se a chamada
+						 * falha, o circuitBreaker é incrementado e depois
+						 * rola o retry. Isso quer dizer que se tiver
+						 * chegado no limte ele nem vai tentar a próxima.
+						 * 
+						 * Só que não rola fazer a política aqui do token
+						 * bucket estilo amazon, para isso acontecer cada
+						 * falha deveria ser contabilizar no circuitbreaker.
+						 */
+						.withCircuitBreaker(circuitBreakerCartao)
+						.withRetry(retryCartao).get();						
+					});
 
-						return proximoGateway.get();
-					})
-							/*
-							 * A ordem aqui importa. O primeiro decorator é
-							 * aplicado primeiro.. Então aqui, se a chamada
-							 * falha, o circuitBreaker é incrementado e depois
-							 * rola o retry. Isso quer dizer que se tiver
-							 * chegado no limte ele nem vai tentar a próxima.
-							 * 
-							 * Só que não rola fazer a política aqui do token
-							 * bucket estilo amazon, para isso acontecer cada
-							 * falha deveria ser contabilizar no circuitbreaker.
-							 */
-							.withCircuitBreaker(circuitBreakerCartao)
-							.withRetry(retryCartao).get();
+
 				});
 
 		// @ICP ifSucess
@@ -161,12 +178,21 @@ public class FluxoRealizacaoCompraCartao {
 			// parar no banco de dados.
 			// so que cansa mesmo hehe. Como melhorar?
 
-			executaTransacao.comRetorno(() -> {
-				novaCompra.finaliza(idTransacao);
-				return novaCompra;
+			businessFlow.executeOnlyOnce("finalizaTransacaoComCartao", () -> {
+				System.out.println("Finalizando a compra...");
+				return executaTransacao.comRetorno(() -> {
+					novaCompra.finaliza(idTransacao);
+					return novaCompra.getId();
+				});				
 			});
+			
 
-			fluxoEnviaEmailSucesso.executa(novaCompra);
+			businessFlow.executeOnlyOnce("enviaEmailSucesso", () -> {
+				System.out.println("Enviando o email...");
+				fluxoEnviaEmailSucesso.executa(novaCompra);
+				return "";
+			});
+			
 
 			return novaCompra;
 		}).ifProblem(Erro500Exception.class, (erro) -> {
