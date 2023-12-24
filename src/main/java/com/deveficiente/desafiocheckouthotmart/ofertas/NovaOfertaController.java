@@ -48,7 +48,7 @@ public class NovaOfertaController {
 		return resultado.ifSuccess(oferta -> {
 			produto.tentaDefinirOfertaComoPrincipal(oferta);
 			return Map.of("nome", oferta.getNome(), "principal",
-					oferta.isPrincipal() + "");
+					oferta.isPrincipal() + "","codigo",oferta.getCodigo().toString());
 		}).throwsEarlyIf(JaExisteOfertaComMesmoNomeException.class, erro -> {
 			return BindExceptionFactory.createGlobalError(request,
 					"novaOfertaRequest",
