@@ -2,6 +2,8 @@ package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +33,15 @@ public class FluxoEnviaEmailSucesso {
 		this.jmsTemplate = jmsTemplate;
 	}
 
-	public void executa(@ICP Compra novaCompra) {
+	public CompletableFuture<Object> executa(@ICP Compra novaCompra) {
 		Optional<String> possivelIdTransacao = novaCompra.buscaIdTransacao();
 		Assert.isTrue(possivelIdTransacao.isPresent(),
 				"Só pode enviar email de sucesso para compra que já foi finalizada. Id = "
 						+ novaCompra.getCodigo());
 
-		Decorators.ofSupplier(() -> {
+		return Decorators.ofSupplier(() -> {
 			emailsCompra.enviaSucesso(novaCompra);
-			return null;
+			return CompletableFuture.completedFuture(null);
 		}).withFallback(exception -> {
 			Map<String, String> parametrosEmail = Map.of("codigoConta",
 					novaCompra.getCodigoConta().toString(), "codigoCompra",
@@ -68,7 +70,7 @@ public class FluxoEnviaEmailSucesso {
 					.adicionaInformacao("codigoConta",
 							novaCompra.getCodigoConta().toString())
 					.info(log);
-			return null;
+			return CompletableFuture.completedFuture(null);
 		}).get();
 	}
 

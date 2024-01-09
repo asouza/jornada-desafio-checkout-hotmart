@@ -13,6 +13,7 @@ import org.springframework.util.Assert;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
+import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.persistence.CascadeType;
@@ -40,6 +41,8 @@ public class Produto {
 	private UUID codigo;
 	@OneToMany(mappedBy = "produto", cascade = CascadeType.PERSIST)
 	private Set<Oferta> ofertas = new HashSet<>();
+	@OneToMany(mappedBy = "produto", cascade = CascadeType.PERSIST)
+	private Set<Cupom> cupons = new HashSet<>();
 
 	@Deprecated
 	public Produto() {
@@ -177,6 +180,16 @@ public class Produto {
 		//não era necessário delegar tanto, a parte ruim é que o de fora
 		//ia conhecer muito o de dentro... Pode atrapalhar refatoracao etc.
 		return this.conta.getConfiguracao();
+	}
+
+	/**
+	 * 
+	 * @param funcaoProdutoraCupom funcao que retorna um cupom para um produto
+	 * @return true se tiver adicionado o cupom e false se já existia um igual
+	 */
+	public boolean adicionaCupom(Function<Produto, Cupom> funcaoProdutoraCupom) {
+		Cupom novoCupom = funcaoProdutoraCupom.apply(this);
+		return this.cupons .add(novoCupom);
 	}
 
 }
