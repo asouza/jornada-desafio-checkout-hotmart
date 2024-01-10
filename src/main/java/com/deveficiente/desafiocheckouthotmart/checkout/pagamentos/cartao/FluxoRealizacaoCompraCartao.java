@@ -84,7 +84,7 @@ public class FluxoRealizacaoCompraCartao {
 	 * @param conta
 	 * @param request
 	 */
-	public Compra executa(CompraBuilderPasso2 basicoDaCompra,
+	public Result<RuntimeException, Long> executa(CompraBuilderPasso2 basicoDaCompra,
 			NovoCheckoutCartaoRequest request) {
 		/*
 		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
@@ -194,20 +194,20 @@ public class FluxoRealizacaoCompraCartao {
 			});
 			
 
-			return novaCompra;
+			return Result.successWithReturn(novaCompra.getId());
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
 			emailsCompra.enviaEmailFalha(novaCompra);
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
-			return novaCompra;
+			return Result.failWithProblem(erro);
 		}).ifProblem(Exception.class, e -> {
 			Log5WBuilder.metodo().oQueEstaAcontecendo(
 					"Aconteceu um problema inesperado na integracao com o cartao de credito")
 					.adicionaInformacao("codigoCompra",
 							novaCompra.getCodigo().toString())
 					.debug(log);
-			return novaCompra;
+			return Result.failWithProblem(e);
 		}).execute().get();
 	}
 

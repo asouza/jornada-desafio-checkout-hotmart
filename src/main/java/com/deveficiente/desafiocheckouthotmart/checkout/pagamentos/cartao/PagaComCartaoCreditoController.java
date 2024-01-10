@@ -5,50 +5,58 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
+import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
 @ICP(10)
 public class PagaComCartaoCreditoController {
 
-	private ExecutaTransacao executaTransacao;
 	@ICP
 	private FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao;
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
-	private RegistraNovaContaService registraNovaContaService;
+	@ICP
+	private CriaOBasicoDaCompraParaFluxosWeb basicoDaCompraParaFluxosWeb;
+
+	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComCartaoCreditoController.class);
 
-	public PagaComCartaoCreditoController(ExecutaTransacao executaTransacao,
-			FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
-			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
-			RegistraNovaContaService registraNovaContaService) {
+	public PagaComCartaoCreditoController(
+			@ICP FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
+			@ICP BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
+			@ICP CriaOBasicoDaCompraParaFluxosWeb basicoDaCompraParaFluxosWeb,
+			EntityManager manager) {
 		super();
-		this.executaTransacao = executaTransacao;
 		this.fluxoRealizacaoCompraCartao = fluxoRealizacaoCompraCartao;
 		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
-		this.registraNovaContaService = registraNovaContaService;
+		this.basicoDaCompraParaFluxosWeb = basicoDaCompraParaFluxosWeb;
+		this.manager = manager;
 	}
 
 	@InitBinder
@@ -74,32 +82,21 @@ public class PagaComCartaoCreditoController {
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
 
-
-		Conta conta = executaTransacao.comRetorno(() -> {
-			return registraNovaContaService.executa(
-					request.getInfoPadrao().getEmail());
-			
-		});
-		
-		
-		
-		@ICP
-		Produto produto = OptionalToHttpStatusException
-				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
-						codigoProduto), 404, "Produto não encontrado");
+		CompraBuilderPasso2 basicoDaCompra = basicoDaCompraParaFluxosWeb
+				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
 
 		@ICP
-		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
-				.orElseGet(() -> produto.getOfertaPrincipal());
-
-		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);		
+		Result<RuntimeException, Long> resultado = fluxoRealizacaoCompraCartao
+				.executa(basicoDaCompra, request);
 		
-		@ICP
-		Compra compraCriada = fluxoRealizacaoCompraCartao.executa(basicoDaCompra,
-				request);
+		if(resultado.isSuccess()) {
+			Compra compraCriada = manager.find(Compra.class, resultado.getSuccessReturn());
+			return new Retorno2(compraCriada.getCodigo().toString(),
+					compraCriada.getOferta().getPreco());			
+		}
+		
+		throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Não poi possível concluir a compra");
 
-		return new Retorno2(compraCriada.getCodigo().toString(),
-				compraCriada.getOferta().getPreco());
 
 	}
 
