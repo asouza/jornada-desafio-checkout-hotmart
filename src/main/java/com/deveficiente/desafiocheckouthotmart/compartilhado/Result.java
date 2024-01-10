@@ -40,6 +40,11 @@ public class Result<ProblemType extends RuntimeException, SuccessType> {
 		Assert.isTrue(!isSuccess, "Só pode buscar o problema se tiver erro");
 		return this.problem;
 	}
+	
+	public SuccessType getSuccessReturn() {
+		Assert.isTrue(isSuccess, "Só pode buscar o sucesso se tiver dado certo");
+		return this.successReturnObject;
+	}
 
 	public boolean isSuccess() {
 		return this.isSuccess;
