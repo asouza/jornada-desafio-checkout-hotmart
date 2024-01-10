@@ -192,4 +192,8 @@ public class Produto {
 		return this.cupons .add(novoCupom);
 	}
 
+	public Long getId() {
+		return id;
+	}
+
 }

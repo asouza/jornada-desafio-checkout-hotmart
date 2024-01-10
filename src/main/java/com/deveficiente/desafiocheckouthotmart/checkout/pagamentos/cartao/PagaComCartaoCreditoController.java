@@ -1,11 +1,11 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,18 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
-import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
-import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
-import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
 import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
@@ -80,9 +73,9 @@ public class PagaComCartaoCreditoController {
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
 	public Retorno2 executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
-			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) {
+			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) throws BindException {
 
-		CompraBuilderPasso2 basicoDaCompra = basicoDaCompraParaFluxosWeb
+		CompraBuilderPasso3 basicoDaCompra = basicoDaCompraParaFluxosWeb
 				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
 
 		@ICP

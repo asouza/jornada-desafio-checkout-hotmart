@@ -3,6 +3,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -13,6 +14,7 @@ import org.springframework.util.Assert;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
+import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 import jakarta.persistence.CascadeType;
@@ -40,6 +42,8 @@ public class Compra {
 			CascadeType.MERGE })
 	private List<TransacaoCompra> transacoes = new ArrayList<>();
 	private UUID codigo = UUID.randomUUID();
+	@ManyToOne
+	private Cupom cupom;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
@@ -156,6 +160,11 @@ public class Compra {
 
 	public Long getId() {
 		return id;
+	}
+	
+	public void setCupom(Cupom cupom) {
+		Assert.state(Objects.isNull(cupom), "Já foi definido um cupom para esta compra. "+this.codigo);
+		this.cupom = cupom;
 	}
 
 }

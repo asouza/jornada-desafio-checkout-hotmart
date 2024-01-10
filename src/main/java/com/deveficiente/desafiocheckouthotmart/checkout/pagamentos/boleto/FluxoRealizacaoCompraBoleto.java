@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
@@ -86,7 +86,7 @@ public class FluxoRealizacaoCompraBoleto {
 	 * @param conta
 	 * @param request
 	 */
-	public Result<RuntimeException, Long> executa(CompraBuilderPasso2 basicoDaCompra,
+	public Result<RuntimeException, Long> executa(CompraBuilderPasso3 basicoDaCompra,
 			NovoCheckoutBoletoRequest request) {
 
 		BusinessFlowSteps businessFlowSteps = businessFlowRegister

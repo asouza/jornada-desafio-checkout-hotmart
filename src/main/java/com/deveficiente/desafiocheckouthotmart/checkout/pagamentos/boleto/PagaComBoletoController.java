@@ -5,6 +5,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
+import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
@@ -54,9 +55,9 @@ public class PagaComBoletoController {
 	public Map<String, String> executa(
 			@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
-			@Valid @RequestBody @ICP NovoCheckoutBoletoRequest request) {
+			@Valid @RequestBody @ICP NovoCheckoutBoletoRequest request) throws BindException {
 
-		CompraBuilderPasso2 basicoDaCompra = criaOBasicoDaCompraParaFluxosWeb
+		CompraBuilderPasso3 basicoDaCompra = criaOBasicoDaCompraParaFluxosWeb
 				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
 
 		/*

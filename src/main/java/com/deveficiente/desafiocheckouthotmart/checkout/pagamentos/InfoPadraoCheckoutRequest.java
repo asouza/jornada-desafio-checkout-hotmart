@@ -1,5 +1,9 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
+import java.util.Optional;
+
+import org.springframework.util.StringUtils;
+
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FieldsValueMatch;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
@@ -49,6 +53,18 @@ public class InfoPadraoCheckoutRequest {
 
 	public Conta novaConta(Configuracao configuracao) {
 		return new Conta(email, configuracao);
+	}
+
+	public Optional<String> buscaCodigoCupom() {
+		if(temCodigoCupom()) {
+			return Optional.of(codigoCupom.trim());
+		}
+		
+		return Optional.empty();
+	}
+
+	public boolean temCodigoCupom() {
+		return StringUtils.hasText(codigoCupom);
 	}
 	
 	

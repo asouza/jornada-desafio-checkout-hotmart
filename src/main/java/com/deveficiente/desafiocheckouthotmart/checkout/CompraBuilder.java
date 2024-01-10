@@ -1,27 +1,30 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.ConfiguracaoBoleto;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.NovoCheckoutBoletoRequest;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao.NovoCheckoutCartaoRequest;
-import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
+import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 
 public class CompraBuilder {
 
-	public static class CompraBuilderPasso2 {
+	public static class CompraBuilderPasso3 {
 
 		private Conta conta;
 		private Oferta oferta;
+		private Optional<Cupom> cupom;
 
-		public CompraBuilderPasso2(Conta conta, Oferta oferta) {
+		CompraBuilderPasso3(Conta conta, Oferta oferta, Cupom cupom) {
 			this.conta = conta;
 			this.oferta = oferta;
+			//aqui eu aceito nulo porque são classes usadas apenas internamente
+			this.cupom = Optional.ofNullable(cupom);
+			// TODO Auto-generated constructor stub
 		}
 
 		public String getCombinacaoContaOferta() {
@@ -46,7 +49,10 @@ public class CompraBuilder {
 				return metadados;
 			};
 
-			return new Compra(conta, oferta, funcaoCriadoraMetadados);
+			Compra compra = new Compra(conta, oferta, funcaoCriadoraMetadados);
+			cupom.ifPresent(compra :: setCupom);
+			
+			return compra;
 		}
 
 		public Compra comBoleto(NovoCheckoutBoletoRequest request,
@@ -61,7 +67,34 @@ public class CompraBuilder {
 				return metadados;
 			};
 
-			return new Compra(conta, oferta, funcaoCriadoraMetadados);
+			Compra compra = new Compra(conta, oferta, funcaoCriadoraMetadados);
+			cupom.ifPresent(compra :: setCupom);
+			
+			return compra;
+		}		
+	}
+	
+	
+	public static class CompraBuilderPasso2 {
+
+		private Conta conta;
+		private Oferta oferta;
+		private Cupom cupom;
+
+		public CompraBuilderPasso2(Conta conta, Oferta oferta) {
+			this.conta = conta;
+			this.oferta = oferta;
+		}
+
+
+
+		public void setCupom(Cupom cupom) {
+			this.cupom = cupom;
+			
+		}
+
+		public CompraBuilderPasso3 passoPagamento() {
+			return new CompraBuilderPasso3(conta,oferta,cupom);
 		}
 
 	}
