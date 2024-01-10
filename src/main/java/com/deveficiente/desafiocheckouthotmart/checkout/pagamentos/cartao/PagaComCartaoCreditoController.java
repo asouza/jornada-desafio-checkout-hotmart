@@ -77,8 +77,7 @@ public class PagaComCartaoCreditoController {
 
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return registraNovaContaService.executa(
-					request.getInfoPadrao().getEmail(),
-					request.getInfoPadrao()::novaConta);
+					request.getInfoPadrao().getEmail());
 			
 		});
 		

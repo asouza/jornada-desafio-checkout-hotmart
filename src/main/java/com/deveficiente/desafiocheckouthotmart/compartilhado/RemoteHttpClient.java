@@ -24,7 +24,13 @@ public class RemoteHttpClient {
 				return Result.failWithProblem(new Erro500Exception(e));
 			}
 			
-			return Result.failWithProblem(new Erro400Exception(e));
+			//quando falha com timeout, vem status -1
+			if(e.status() >= 400) {
+				return Result.failWithProblem(new Erro400Exception(e));				
+			}
+			
+			return Result.failWithProblem(e);
+			
 		}
 	}
 

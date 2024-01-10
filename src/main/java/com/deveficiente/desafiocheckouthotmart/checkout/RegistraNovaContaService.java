@@ -41,8 +41,7 @@ public class RegistraNovaContaService {
 	 * @param funcaoProdutoraConta funcao que permite uma nova {@link Conta} ser criada, em caso de necessidade. 
 	 * @return
 	 */
-	public Conta executa(String email,
-			Function<@ICP Configuracao, @ICP Conta> funcaoProdutoraConta) {
+	public Conta executa(String email) {
 		Optional<Conta> possivelConta = buscasNecessariasParaPagamento
 				.findContaByEmail(email);
 
@@ -53,7 +52,7 @@ public class RegistraNovaContaService {
 			Assert.notNull(configuracaoDefault,
 					"Deveria haver uma configuracao default criada");
 
-			Conta novaConta = funcaoProdutoraConta.apply(configuracaoDefault);
+			Conta novaConta = new Conta(email, configuracaoDefault);
 			manager.persist(novaConta);
 
 			Log5WBuilder

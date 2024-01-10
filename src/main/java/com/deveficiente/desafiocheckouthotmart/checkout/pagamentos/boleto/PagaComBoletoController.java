@@ -17,6 +17,7 @@ import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
@@ -32,27 +33,24 @@ import jakarta.validation.Valid;
 @ICP(10)
 public class PagaComBoletoController {
 
-	private ExecutaTransacao executaTransacao;
 	@ICP
 	private FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto;
 	@ICP
-	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
-	private RegistraNovaContaService registraNovaContaService;
+	private CriaOBasicoDaCompraParaFluxosWeb criaOBasicoDaCompraParaFluxosWeb;
+	private ExecutaTransacao executaTransacao;
 	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(PagaComBoletoController.class);
 
-	public PagaComBoletoController(ExecutaTransacao executaTransacao,
+	public PagaComBoletoController(
 			@ICP FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
-			@ICP BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
-			RegistraNovaContaService registraNovaContaService,
-			EntityManager manager) {
+			@ICP CriaOBasicoDaCompraParaFluxosWeb criaOBasicoDaCompraParaFluxosWeb,
+			ExecutaTransacao executaTransacao, EntityManager manager) {
 		super();
-		this.executaTransacao = executaTransacao;
 		this.fluxoRealizacaoCompraBoleto = fluxoRealizacaoCompraBoleto;
-		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
-		this.registraNovaContaService = registraNovaContaService;
+		this.criaOBasicoDaCompraParaFluxosWeb = criaOBasicoDaCompraParaFluxosWeb;
+		this.executaTransacao = executaTransacao;
 		this.manager = manager;
 	}
 
@@ -67,23 +65,8 @@ public class PagaComBoletoController {
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutBoletoRequest request) {
 
-		Conta conta = executaTransacao.comRetorno(() -> {
-			return registraNovaContaService.executa(
-					request.getInfoPadrao().getEmail(),
-					request.getInfoPadrao()::novaConta);
-
-		});
-
-		@ICP
-		Produto produto = OptionalToHttpStatusException
-				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
-						codigoProduto), 404, "Produto não encontrado");
-
-		@ICP
-		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
-				.orElseGet(() -> produto.getOfertaPrincipal());
-
-		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
+		CompraBuilderPasso2 basicoDaCompra = criaOBasicoDaCompraParaFluxosWeb
+				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
 
 		/*
 		 * Com esse lance do controle de fluxo, tem um monte de transacao
@@ -91,20 +74,17 @@ public class PagaComBoletoController {
 		 * reconstroi o objeto.
 		 */
 		@ICP
-		Compra compraCriada = fluxoRealizacaoCompraBoleto
+		Long idCompra = fluxoRealizacaoCompraBoleto
 				.executa(basicoDaCompra, request);
 
-		return executaTransacao.comRetorno(() -> {
-			Compra compraAtualizada = manager.merge(compraCriada);
+		Compra compra = manager.find(Compra.class, idCompra);
 
-			return Map.of("codigoCompra", compraCriada.getCodigo().toString(),
-					"ultimoStatus",
-					compraAtualizada.getUltimaTransacaoRegistrada().getStatus()
-							.toString(),
-					"codigoBoleto", compraAtualizada.getMetadados()
-							.buscaInfoCompraBoleto().get().getCodigoBoleto());
-
-		});
+		return Map.of("codigoCompra", compra.getCodigo().toString(),
+				"ultimoStatus",
+				compra.getUltimaTransacaoRegistrada().getStatus()
+						.toString(),
+				"codigoBoleto", compra.getMetadados()
+						.buscaInfoCompraBoleto().get().getCodigoBoleto());
 
 	}
 }
