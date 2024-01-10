@@ -86,7 +86,7 @@ public class FluxoRealizacaoCompraBoleto {
 	 * @param conta
 	 * @param request
 	 */
-	public Long executa(CompraBuilderPasso2 basicoDaCompra,
+	public Result<RuntimeException, Long> executa(CompraBuilderPasso2 basicoDaCompra,
 			NovoCheckoutBoletoRequest request) {
 
 		BusinessFlowSteps businessFlowSteps = businessFlowRegister
@@ -147,7 +147,7 @@ public class FluxoRealizacaoCompraBoleto {
 		// @ICP e ifProblem
 		return resultadoIntegracao.ifSuccess(idTransacao -> {
 
-			businessFlowSteps.executeOnlyOnce("adicionaTransacao", () -> {
+			String idCompraPassoGrava = businessFlowSteps.executeOnlyOnce("adicionaTransacao", () -> {
 				Log5WBuilder.metodo()
 						.oQueEstaAcontecendo("Processou o pagamento")
 						.adicionaInformacao("codigoCompra",
@@ -183,7 +183,7 @@ public class FluxoRealizacaoCompraBoleto {
 				return idCompraAlterada;
 			});
 
-			return compraGravada.getId();
+			return Result.successWithReturn(Long.valueOf(idCompraPassoGrava));
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
 			businessFlowSteps.executeOnlyOnce("enviaEmailDeFalha", () -> {
@@ -194,14 +194,14 @@ public class FluxoRealizacaoCompraBoleto {
 			});
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
-			return compraGravada.getId();
+			return Result.failWithProblem(erro);
 		}).ifProblem(Exception.class, e -> {
 			Log5WBuilder.metodo().oQueEstaAcontecendo(
 					"Aconteceu um problema inesperado na integracao com a api de boleto")
 					.adicionaInformacao("codigoCompra",
 							compraGravada.getCodigo().toString())
 					.info(log);
-			return compraGravada.getId();
+			return Result.failWithProblem(e);
 		}).execute().get();
 	}
 
