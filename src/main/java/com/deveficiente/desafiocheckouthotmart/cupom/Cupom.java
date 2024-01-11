@@ -42,14 +42,13 @@ public class Cupom {
 		this.limiteUso = limiteUso;
 	}
 
-	public BigDecimal aplicaDesconto(Oferta oferta) {
-		//aqui podia ter recebido só o valor, aí essa classe ia ficar ainda mais generica
+	public BigDecimal aplicaDesconto(BigDecimal valor) {
 		BigDecimal percentualRestante = new BigDecimal("100")
 				.subtract(this.percentualDesconto);
 		BigDecimal porcentagem = percentualRestante
 				.divide(new BigDecimal("100"));
 
-		return oferta.getPreco().multiply(porcentagem);
+		return valor.multiply(porcentagem);
 	}
 
 	@Override

@@ -34,7 +34,7 @@ class CupomTest {
 				LocalDateTime.now().plusDays(3));
 
 		Assertions.assertEquals(valorEsperado,
-				cupom.aplicaDesconto(oferta).setScale(0));
+				cupom.aplicaDesconto(oferta.getPreco()).setScale(0));
 	}
 
 }

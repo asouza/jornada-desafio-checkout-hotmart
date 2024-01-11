@@ -1,6 +1,8 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
+import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
@@ -25,6 +28,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Version;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class Compra {
@@ -44,10 +49,16 @@ public class Compra {
 	private UUID codigo = UUID.randomUUID();
 	@ManyToOne
 	private Cupom cupom;
-	
-	
-	private static final Logger log = LoggerFactory.getLogger(Compra.class);
+	@Version
+	private LocalDateTime instanteAtualizacao;
+	private LocalDateTime instanteProvisionamento;
+	@NotNull
+	private BigDecimal precoMomento;
+	@NotNull
+	private UUID codigoOferta;
+	private UUID codigoProduto;
 
+	private static final Logger log = LoggerFactory.getLogger(Compra.class);
 
 	@Deprecated
 	public Compra() {
@@ -58,6 +69,9 @@ public class Compra {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados) {
 		this.conta = conta;
 		this.oferta = oferta;
+		this.precoMomento = oferta.getPreco();
+		this.codigoOferta = oferta.getCodigo();
+		this.codigoProduto = oferta.getProduto().getCodigo();
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
 		this.metadados = funcaoCriadoraMetadados.apply(this);
 	}
@@ -70,7 +84,7 @@ public class Compra {
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.finalizada,
 				idTransacao));
 	}
-	
+
 	public BigDecimal getPreco() {
 		return oferta.getPreco();
 	}
@@ -114,43 +128,42 @@ public class Compra {
 
 	public TransacaoCompra getUltimaTransacaoRegistrada() {
 		assertTemTransacaoIniciada();
-		
-		return this.transacoes.get(this.transacoes.size()-1);
+
+		return this.transacoes.get(this.transacoes.size() - 1);
 	}
 
 	private void assertTemTransacaoIniciada() {
-		Assert.state(temTransacaoComStatus(StatusCompra.iniciada), "Toda compra deveria nascer com uma transacao indicando que ela foi iniciada => "+this.codigo);
+		Assert.state(temTransacaoComStatus(StatusCompra.iniciada),
+				"Toda compra deveria nascer com uma transacao indicando que ela foi iniciada => "
+						+ this.codigo);
 	}
 
 	public void adicionaTransacao(StatusCompra status) {
-		assertTemTransacaoIniciada();	
+		assertTemTransacaoIniciada();
 		this.transacoes.add(new TransacaoCompra(this, status));
 	}
-	
+
 	/**
-	 * Adiciona uma transacao apenas se não tiver uma com o status
-	 * em questão.
+	 * Adiciona uma transacao apenas se não tiver uma com o status em questão.
 	 * 
 	 * @param status
 	 * @return se adicionou
 	 */
 	public boolean adicionaTransacaoCondicional(StatusCompra status) {
-		assertTemTransacaoIniciada();	
-		
-		if(temTransacaoComStatus(status)) {
-			//TODO aqui devia ser debug
-			Log5WBuilder
-				.metodo()
-				.oQueEstaAcontecendo("Não adicionou transacao")
-				.adicionaInformacao("status", status.toString())
-				.adicionaInformacao("codigoCompra", this.codigo.toString())
-				.info(log);
-			
+		assertTemTransacaoIniciada();
+
+		if (temTransacaoComStatus(status)) {
+			// TODO aqui devia ser debug
+			Log5WBuilder.metodo().oQueEstaAcontecendo("Não adicionou transacao")
+					.adicionaInformacao("status", status.toString())
+					.adicionaInformacao("codigoCompra", this.codigo.toString())
+					.info(log);
+
 			return false;
 		}
-		
+
 		this.transacoes.add(new TransacaoCompra(this, status));
-		
+
 		return true;
 	}
 
@@ -161,10 +174,41 @@ public class Compra {
 	public Long getId() {
 		return id;
 	}
-	
+
 	public void setCupom(Cupom cupom) {
-		Assert.state(Objects.isNull(cupom), "Já foi definido um cupom para esta compra. "+this.codigo);
+		Assert.state(Objects.isNull(this.cupom),
+				"Já foi definido um cupom para esta compra. " + this.codigo);
 		this.cupom = cupom;
+	}
+
+	public Provisionamento calculaProvisionamento() {
+
+		// começo super restritivo. Se tiver argumento, fica mais soft.
+		Assert.state(temTransacaoComStatus(StatusCompra.finalizada),
+				"Provisionamento só pode ser calculado para compra finalizada");
+
+		BigDecimal precoOriginal = this.oferta.getPreco();
+
+		BigDecimal precoFinal = Optional.ofNullable(this.cupom)
+				.map(cupom -> cupom.aplicaDesconto(precoOriginal))
+				.orElse(precoOriginal);
+
+		// quase que eu implemento de novo, mesmo tendo um metodo privado
+		// neste ponto a gente sabe que tem uma transacao finalizada 
+		TransacaoCompra transacaoFinalizacao = buscaTransacaoComStatus(
+				StatusCompra.finalizada).get();
+		
+		LocalDate dataLiberacaoPagamento = this.conta.getConfiguracao().calculaDiaPagamento(transacaoFinalizacao);
+		
+
+		return new Provisionamento(this.conta, this.codigoProduto,this.codigoOferta,this.precoMomento,precoFinal,dataLiberacaoPagamento);
+	}
+
+	public void provisionouOPagamento() {
+		//aqui poderia só ignorar a chamada e logar. Outra opcao... 
+		Assert.state(Objects.isNull(this.instanteProvisionamento), "Compra já foi provisionada");
+		this.instanteProvisionamento = LocalDateTime.now();
+		this.instanteAtualizacao = LocalDateTime.now();		
 	}
 
 }

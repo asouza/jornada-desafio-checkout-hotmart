@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -54,6 +55,14 @@ public class TransacaoCompra {
 
 	public StatusCompra getStatus() {
 		return this.status;
+	}
+
+	public LocalDateTime getInstante() {
+		return this.instante;
+	}
+
+	public LocalDateTime somaDiasAoInstante(int diasParaSeremSomados) {
+		return this.instante.plusDays(diasParaSeremSomados);
 	}
 	
 	
