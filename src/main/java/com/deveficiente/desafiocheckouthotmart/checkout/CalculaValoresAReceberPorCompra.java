@@ -36,7 +36,7 @@ public class CalculaValoresAReceberPorCompra {
 			.getLogger(CalculaValoresAReceberPorCompra.class);
 
 	@GetMapping("/879r4hfkr89y4i4gkuhg34iuygg")
-	@Scheduled(fixedRate = 5000) // Executa a cada 5 segundos
+	@Scheduled(fixedRate = 3600)
 	public void calcula() {
 		
 		Log5WBuilder
