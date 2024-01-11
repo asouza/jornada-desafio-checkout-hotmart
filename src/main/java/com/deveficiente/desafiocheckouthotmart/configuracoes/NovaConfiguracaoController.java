@@ -1,10 +1,13 @@
 package com.deveficiente.desafiocheckouthotmart.configuracoes;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.deveficiente.desafiocheckouthotmart.compartilhado.BindExceptionFactory;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -24,11 +27,14 @@ public class NovaConfiguracaoController {
 
     @PostMapping("/configuracoes")
     @Transactional
-    public void novaConfiguracao(@Valid @RequestBody NovaConfiguracaoRequest request) {
-        if(request.isOpcaoDefault() && configuracaoRepository.findByOpcaoDefaultIsTrue().isPresent()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,"Ja existe uma configuracao default");
-        }
-
-        configuracaoRepository.save(request.toModel());
+    public void novaConfiguracao(@Valid @RequestBody NovaConfiguracaoRequest request) throws BindException {
+        Configuracao novaConfiguracao = request.toModel();
+        
+        if(novaConfiguracao.isDefault() && configuracaoRepository.findByOpcaoDefaultIsTrue().isPresent()) {
+        	
+            throw BindExceptionFactory.createGlobalError("Já existe uma configuração default registrada");
+        }        
+        
+		configuracaoRepository.save(novaConfiguracao);
     }
 }

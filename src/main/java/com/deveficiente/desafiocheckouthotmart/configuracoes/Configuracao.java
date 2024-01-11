@@ -59,4 +59,8 @@ public class Configuracao {
 		return tx.somaDiasAoInstante(30).toLocalDate();
 	}
 
+	public boolean isDefault() {
+		return opcaoDefault;
+	}
+
 }

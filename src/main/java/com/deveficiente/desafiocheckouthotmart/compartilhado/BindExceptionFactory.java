@@ -25,4 +25,8 @@ public class BindExceptionFactory {
 		
 	}
 
+	public static BindException createGlobalError(String mensagem) {
+		return createGlobalError(new Object(),"request",mensagem);
+	}
+
 }
