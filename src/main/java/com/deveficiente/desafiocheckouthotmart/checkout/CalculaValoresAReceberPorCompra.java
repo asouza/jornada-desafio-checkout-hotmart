@@ -1,15 +1,16 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
-import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.OptimisticLockException;
@@ -20,7 +21,8 @@ public class CalculaValoresAReceberPorCompra {
 	private CompraRepository compraRepository;
 	private EntityManager manager;
 	private ExecutaTransacao executaTransacao;
-
+	
+	
 	public CalculaValoresAReceberPorCompra(CompraRepository compraRepository,
 			EntityManager manager,
 			ExecutaTransacao executaTransacao) {
@@ -34,7 +36,15 @@ public class CalculaValoresAReceberPorCompra {
 			.getLogger(CalculaValoresAReceberPorCompra.class);
 
 	@GetMapping("/879r4hfkr89y4i4gkuhg34iuygg")
+	@Scheduled(fixedRate = 5000) // Executa a cada 5 segundos
 	public void calcula() {
+		
+		Log5WBuilder
+			.metodo()
+			.oQueEstaAcontecendo("Vai rodar o provisionamento")
+			.adicionaInformacao("instante", LocalDateTime.now().toString())
+			.info(log);
+		
 		List<Compra> comprasFinalizadas = compraRepository
 				.listaComprasNaoProvisionadas();
 
