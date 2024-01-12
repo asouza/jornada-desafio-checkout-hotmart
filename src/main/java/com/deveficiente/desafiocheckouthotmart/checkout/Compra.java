@@ -19,6 +19,7 @@ import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
+import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -56,7 +57,12 @@ public class Compra {
 	private BigDecimal precoMomento;
 	@NotNull
 	private UUID codigoOferta;
+	@NotNull
 	private UUID codigoProduto;
+	@NotNull
+	private BigDecimal precoFinal;
+	@NotNull
+	private QuemPagaJuros quemPagaJuros;
 
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
 
@@ -67,6 +73,11 @@ public class Compra {
 
 	public Compra(Conta conta, Oferta oferta,
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados) {
+		this(conta,oferta,null,funcaoCriadoraMetadados);
+	}
+
+	public Compra(Conta conta, Oferta oferta, Cupom cupom,
+			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados) {
 		this.conta = conta;
 		this.oferta = oferta;
 		this.precoMomento = oferta.getPreco();
@@ -74,6 +85,16 @@ public class Compra {
 		this.codigoProduto = oferta.getProduto().getCodigo();
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
 		this.metadados = funcaoCriadoraMetadados.apply(this);
+		
+		this.cupom = cupom;
+		this.precoFinal = 
+			Optional
+				.ofNullable(cupom)
+				.map(cupomExistente -> cupomExistente.aplicaDesconto(this.precoMomento))
+				.orElse(this.precoMomento);
+		
+		this.quemPagaJuros = oferta.getPagaJuros();
+		
 	}
 
 	public void finaliza(String idTransacao) {
@@ -175,40 +196,31 @@ public class Compra {
 		return id;
 	}
 
-	public void setCupom(Cupom cupom) {
-		Assert.state(Objects.isNull(this.cupom),
-				"Já foi definido um cupom para esta compra. " + this.codigo);
-		this.cupom = cupom;
-	}
-
 	public Provisionamento calculaProvisionamento() {
 
 		// começo super restritivo. Se tiver argumento, fica mais soft.
 		Assert.state(temTransacaoComStatus(StatusCompra.finalizada),
 				"Provisionamento só pode ser calculado para compra finalizada");
 
-		BigDecimal precoOriginal = this.oferta.getPreco();
-
-		BigDecimal precoFinal = Optional.ofNullable(this.cupom)
-				.map(cupom -> cupom.aplicaDesconto(precoOriginal))
-				.orElse(precoOriginal);
-
 		// quase que eu implemento de novo, mesmo tendo um metodo privado
-		// neste ponto a gente sabe que tem uma transacao finalizada 
+		// neste ponto a gente sabe que tem uma transacao finalizada
 		TransacaoCompra transacaoFinalizacao = buscaTransacaoComStatus(
 				StatusCompra.finalizada).get();
-		
-		LocalDate dataLiberacaoPagamento = this.conta.getConfiguracao().calculaDiaPagamento(transacaoFinalizacao);
-		
 
-		return new Provisionamento(this.conta, this.codigoProduto,this.codigoOferta,this.precoMomento,precoFinal,dataLiberacaoPagamento);
+		LocalDate dataLiberacaoPagamento = this.conta.getConfiguracao()
+				.calculaDiaPagamento(transacaoFinalizacao);
+		
+		return new Provisionamento(this.conta, this.codigoProduto,
+				this.codigoOferta, this.precoMomento, this.precoFinal,
+				dataLiberacaoPagamento);
 	}
 
 	public void provisionouOPagamento() {
-		//aqui poderia só ignorar a chamada e logar. Outra opcao... 
-		Assert.state(Objects.isNull(this.instanteProvisionamento), "Compra já foi provisionada");
+		// aqui poderia só ignorar a chamada e logar. Outra opcao...
+		Assert.state(Objects.isNull(this.instanteProvisionamento),
+				"Compra já foi provisionada");
 		this.instanteProvisionamento = LocalDateTime.now();
-		this.instanteAtualizacao = LocalDateTime.now();		
+		this.instanteAtualizacao = LocalDateTime.now();
 	}
 
 }

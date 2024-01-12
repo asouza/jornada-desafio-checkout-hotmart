@@ -17,13 +17,13 @@ public class CompraBuilder {
 
 		private Conta conta;
 		private Oferta oferta;
-		private Optional<Cupom> cupom;
+		private Optional<Cupom> possivelCupom;
 
 		CompraBuilderPasso3(Conta conta, Oferta oferta, Cupom cupom) {
 			this.conta = conta;
 			this.oferta = oferta;
 			//aqui eu aceito nulo porque são classes usadas apenas internamente
-			this.cupom = Optional.ofNullable(cupom);
+			this.possivelCupom = Optional.ofNullable(cupom);
 			// TODO Auto-generated constructor stub
 		}
 
@@ -49,10 +49,10 @@ public class CompraBuilder {
 				return metadados;
 			};
 
-			Compra compra = new Compra(conta, oferta, funcaoCriadoraMetadados);
-			cupom.ifPresent(compra :: setCupom);
+			return possivelCupom
+					.map(cupom -> new Compra(conta, oferta, cupom,funcaoCriadoraMetadados))
+					.orElse(new Compra(conta, oferta,funcaoCriadoraMetadados));
 			
-			return compra;
 		}
 
 		public Compra comBoleto(NovoCheckoutBoletoRequest request,
@@ -67,10 +67,9 @@ public class CompraBuilder {
 				return metadados;
 			};
 
-			Compra compra = new Compra(conta, oferta, funcaoCriadoraMetadados);
-			cupom.ifPresent(compra :: setCupom);
-			
-			return compra;
+			return possivelCupom
+					.map(cupom -> new Compra(conta, oferta, cupom,funcaoCriadoraMetadados))
+					.orElse(new Compra(conta, oferta,funcaoCriadoraMetadados));
 		}		
 	}
 	

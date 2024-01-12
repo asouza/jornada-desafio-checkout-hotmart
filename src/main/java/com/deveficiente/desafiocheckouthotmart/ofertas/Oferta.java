@@ -156,4 +156,8 @@ public class Oferta {
 		return resultado.get(0);
 	}
 
+	public QuemPagaJuros getPagaJuros() {
+		return this.quemPagaJuros;
+	}
+
 }
