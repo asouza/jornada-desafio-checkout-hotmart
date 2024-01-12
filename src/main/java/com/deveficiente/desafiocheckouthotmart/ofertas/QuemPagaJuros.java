@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.util.Assert;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.FormulaCalculoJuros;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
 
 import jakarta.validation.constraints.Min;
@@ -27,15 +28,8 @@ public enum QuemPagaJuros {
 			parcelas.add(new ValorParcelaMes(preco, 1));
 			
 			for(int n = 2; n <= numeroMaximoParcelas; n++ ) {
-				BigDecimal taxaPercentualTotal = taxaJurosAoMes
-							.multiply(new BigDecimal(n))
-							.divide(new BigDecimal("100"))
-							.add(BigDecimal.ONE);
-
-				//o arredondamento poderia vir via parametro
-				BigDecimal valorPorMesSemJuros = preco.divide(new BigDecimal(n),3,RoundingMode.HALF_EVEN);
-				BigDecimal valorPorMesComJuros = valorPorMesSemJuros.multiply(taxaPercentualTotal);
-				parcelas.add(new ValorParcelaMes(valorPorMesComJuros, n));
+				BigDecimal valorParcela = FormulaCalculoJuros.executa(preco, taxaJurosAoMes, n,5, RoundingMode.HALF_EVEN);
+				parcelas.add(new ValorParcelaMes(valorParcela, n));
 			}
 			return parcelas;
 		}

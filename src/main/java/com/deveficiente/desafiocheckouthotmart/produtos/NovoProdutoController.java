@@ -38,13 +38,7 @@ public class NovoProdutoController {
         Conta conta = contaRepository.findByCodigo(UUID.fromString(codigoConta))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta não encontrada"));
 
-        Result<RuntimeException, Produto> resultado = conta.adicionaProduto(request :: toModel);
-        
-        //#naoSeiPq aqui ele precisa que salve para de fato aplicar o cascade.
-        //contaRepository.save(conta);
-        
-        //#possivelResposta Configurando o cascade como persist foi. Então alteração de estado no objeto dentro de uma transacao triga o persist?
-
+        Result<RuntimeException, Produto> resultado = conta.adicionaProduto(request :: toModel);        
        
         return resultado
         	.ifSuccess(produto -> {
