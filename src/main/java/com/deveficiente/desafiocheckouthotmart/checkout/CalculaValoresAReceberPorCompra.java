@@ -45,6 +45,7 @@ public class CalculaValoresAReceberPorCompra {
 			.adicionaInformacao("instante", LocalDateTime.now().toString())
 			.info(log);
 		
+		//TODO aqui tem que trocar o retorno para deixar nitido que é uma query planejada
 		List<Compra> comprasFinalizadas = compraRepository
 				.listaComprasNaoProvisionadas();
 
@@ -65,6 +66,9 @@ public class CalculaValoresAReceberPorCompra {
 					 * instancias.
 					 */
 					compra.provisionouOPagamento();
+					
+					//Chamo o merge pq a compra foi carregada em outro contexto transacional
+					manager.merge(compra);
 				});
 			} catch (OptimisticLockException e) {
 				Log5WBuilder.metodo().oQueEstaAcontecendo(

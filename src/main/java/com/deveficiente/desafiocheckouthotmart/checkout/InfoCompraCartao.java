@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 import org.hibernate.validator.constraints.CreditCardNumber;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear;
+import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
+import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
@@ -65,6 +67,10 @@ public class InfoCompraCartao {
 
 	public MesVencimentoCartao getMes() {
 		return mes;
+	}
+
+	public @NotNull BigDecimal calculaPossivelDescontoRepasse(QuemPagaJuros quemPagaJuros,BigDecimal valor,Configuracao configuracao) {
+		return quemPagaJuros.calculaPossivelDescontoDeRepasse(valor,numeroParcelas,configuracao.getTaxaJuros());
 	}
 	
 	

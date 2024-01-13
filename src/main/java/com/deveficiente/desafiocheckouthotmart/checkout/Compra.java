@@ -30,7 +30,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Version;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 
 @Entity
 public class Compra {
@@ -52,6 +54,7 @@ public class Compra {
 	private Cupom cupom;
 	@Version
 	private LocalDateTime instanteAtualizacao;
+	@PastOrPresent
 	private LocalDateTime instanteProvisionamento;
 	@NotNull
 	private BigDecimal precoMomento;
@@ -63,6 +66,8 @@ public class Compra {
 	private BigDecimal precoFinal;
 	@NotNull
 	private QuemPagaJuros quemPagaJuros;
+	@OneToOne(mappedBy = "compra",cascade = CascadeType.PERSIST)
+	private Provisionamento provisionamento;
 
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
 
@@ -84,16 +89,19 @@ public class Compra {
 		this.codigoOferta = oferta.getCodigo();
 		this.codigoProduto = oferta.getProduto().getCodigo();
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
-		this.metadados = funcaoCriadoraMetadados.apply(this);
-		
+		this.metadados = funcaoCriadoraMetadados.apply(this);		
 		this.cupom = cupom;
+		this.quemPagaJuros = oferta.getPagaJuros();
+		/*
+		 * O cupom aqui pode ser nulo porque este construtor é chamado
+		 * a partir de outro. 
+		 */
 		this.precoFinal = 
-			Optional
-				.ofNullable(cupom)
+				Optional
+				.ofNullable(this.cupom)
 				.map(cupomExistente -> cupomExistente.aplicaDesconto(this.precoMomento))
 				.orElse(this.precoMomento);
 		
-		this.quemPagaJuros = oferta.getPagaJuros();
 		
 	}
 
@@ -201,24 +209,52 @@ public class Compra {
 		// começo super restritivo. Se tiver argumento, fica mais soft.
 		Assert.state(temTransacaoComStatus(StatusCompra.finalizada),
 				"Provisionamento só pode ser calculado para compra finalizada");
+		
+		//deixando a pre condicao mais soft... Aqui abre uma porta maior para bug, na minha opinião.
+		if(this.provisionamento != null) {
+			//devia ser debug, já que não tem a ver com o que está definido para info
+			Log5WBuilder
+				.metodo()
+				.oQueEstaAcontecendo("Calculo de provisionamento para provisionamento já feito")
+				.adicionaInformacao("idCompra", this.id.toString())
+				.adicionaInformacao("codigoCompra", this.codigo.toString())
+				.info(log);
+			
+			return this.provisionamento;
+		}
+		
 
 		// quase que eu implemento de novo, mesmo tendo um metodo privado
 		// neste ponto a gente sabe que tem uma transacao finalizada
 		TransacaoCompra transacaoFinalizacao = buscaTransacaoComStatus(
 				StatusCompra.finalizada).get();
 
-		LocalDate dataLiberacaoPagamento = this.conta.getConfiguracao()
-				.calculaDiaPagamento(transacaoFinalizacao);
+		Configuracao configuracao = this.conta.getConfiguracao();
 		
-		return new Provisionamento(this.conta, this.codigoProduto,
-				this.codigoOferta, this.precoMomento, this.precoFinal,
+		LocalDate dataLiberacaoPagamento = configuracao
+				.calculaDiaPagamento(transacaoFinalizacao);
+		 
+		
+		BigDecimal valorComissao = configuracao.calculaComissao(this.precoFinal);
+		BigDecimal valorDeRepasse = this.precoFinal.subtract(valorComissao);		
+		BigDecimal descontoRepassePorTaxasExtras = this.metadados.calculaPossivelDescontoRepasse(quemPagaJuros, valorDeRepasse, configuracao);
+		
+		ValoresParaTodosEnvolvidos valores = new ValoresParaTodosEnvolvidos(valorComissao,valorDeRepasse,descontoRepassePorTaxasExtras);  
+				
+		this.provisionamento = new Provisionamento(this,valores,
 				dataLiberacaoPagamento);
+		
+		return this.provisionamento;
 	}
 
 	public void provisionouOPagamento() {
 		// aqui poderia só ignorar a chamada e logar. Outra opcao...
 		Assert.state(Objects.isNull(this.instanteProvisionamento),
 				"Compra já foi provisionada");
+		
+		Assert.state(Objects.nonNull(this.provisionamento),
+				"O provisionamento precisa ser calculado antes. Já chamou o calculaProvisionamento?");
+		
 		this.instanteProvisionamento = LocalDateTime.now();
 		this.instanteAtualizacao = LocalDateTime.now();
 	}

@@ -1,9 +1,12 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
+import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -11,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Aqui representa os possíveis metadados de uma compra. As possibilidades são:
@@ -33,6 +37,7 @@ public class MetadadosCompra {
 	private InfoCompraCartao infoCompraCartao;
 	@Embedded
 	private InfoCompraBoleto infoCompraBoleto;
+	
 	
 	@Deprecated
 	public MetadadosCompra() {
@@ -57,6 +62,16 @@ public class MetadadosCompra {
 
 	public void setInfoBoleto(InfoCompraBoleto infoCompraBoleto) {
 		this.infoCompraBoleto = infoCompraBoleto;
+	}
+
+	public @NotNull BigDecimal calculaPossivelDescontoRepasse(
+			QuemPagaJuros quemPagaJuros,BigDecimal valor,Configuracao configuracao) {
+		
+		if(infoCompraCartao != null) {
+			return infoCompraCartao.calculaPossivelDescontoRepasse(quemPagaJuros,valor,configuracao);
+		}
+		
+		return valor;
 	}
 
 }

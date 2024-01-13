@@ -1,45 +1,48 @@
 package com.deveficiente.desafiocheckouthotmart.checkout;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
 
-import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
-
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class Provisionamento {
 
+
 	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	@ManyToOne
-	private Conta conta;
+	@OneToOne
 	@NotNull
-	private BigDecimal precoFinal;
+	private Compra compra;
+	@Embedded
 	@NotNull
+	@Valid
+	private ValoresParaTodosEnvolvidos valores;
+	@NotNull
+	@FutureOrPresent
 	private LocalDate dataLiberacaoPagamento;
-	@NotNull
-	private UUID codigoOferta;
-	@NotNull
-	private UUID codigoProduto;
-	@NotNull
-	private BigDecimal precoOriginal;
-
-	public Provisionamento(Conta conta, UUID codigoProduto,UUID codigoOferta, BigDecimal precoOriginal ,BigDecimal precoFinal,
-			LocalDate dataLiberacaoPagamento) {
-				this.conta = conta;
-				this.codigoOferta = codigoOferta;
-				this.codigoProduto = codigoProduto;
-				this.precoFinal = precoFinal;
-				this.precoOriginal = precoOriginal;
-				this.dataLiberacaoPagamento = dataLiberacaoPagamento;
+	
+	@Deprecated
+	public Provisionamento() {
+		// TODO Auto-generated constructor stub
 	}
+	
+	public Provisionamento(Compra compra, ValoresParaTodosEnvolvidos valores,
+			LocalDate dataLiberacaoPagamento) {
+				this.compra = compra;
+				this.valores = valores;
+				this.dataLiberacaoPagamento = dataLiberacaoPagamento;
+		// TODO Auto-generated constructor stub
+	}
+	
+	
 
 }

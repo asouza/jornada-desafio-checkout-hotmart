@@ -63,4 +63,9 @@ public class Configuracao {
 		return opcaoDefault;
 	}
 
+	public BigDecimal calculaComissao(@NotNull BigDecimal precoFinal) {
+		BigDecimal percentualComissao = this.taxaComissao.divide(new BigDecimal(100));
+		return precoFinal.multiply(percentualComissao);
+	}
+
 }
