@@ -45,8 +45,13 @@ public class CalculaValoresAReceberPorCompra {
 			.adicionaInformacao("instante", LocalDateTime.now().toString())
 			.info(log);
 		
-		//TODO aqui tem que trocar o retorno para deixar nitido que é uma query planejada
-		List<Compra> comprasFinalizadas = compraRepository
+		//Deixa nitido que o método retorna um objeto diferente.
+		/*
+		 * O motivo é que eu preciso usar a compra do loop e acessar
+		 * colecoes internas. Só que o método de busca, quando
+		 * executado, fecha o contexto de uso do EM.
+		 */
+		List<CompraComTransacaoCarregada> comprasFinalizadas = compraRepository
 				.listaComprasNaoProvisionadas();
 
 		// aqui poderia configurar algum batch
@@ -54,7 +59,7 @@ public class CalculaValoresAReceberPorCompra {
 		 * também poderia usar a solução proposta por Rafael Ponte aqui
 		 * https://www.youtube.com/watch?v=I_kEO_HPfBU&t=1399s
 		 */
-		for (Compra compra : comprasFinalizadas) {
+		for (CompraComTransacaoCarregada compra : comprasFinalizadas) {
 			Provisionamento novoProvisionamento = compra
 					.calculaProvisionamento();
 			try {
@@ -68,7 +73,7 @@ public class CalculaValoresAReceberPorCompra {
 					compra.provisionouOPagamento();
 					
 					//Chamo o merge pq a compra foi carregada em outro contexto transacional
-					manager.merge(compra);
+					manager.merge(compra.getCompra());
 				});
 			} catch (OptimisticLockException e) {
 				Log5WBuilder.metodo().oQueEstaAcontecendo(
