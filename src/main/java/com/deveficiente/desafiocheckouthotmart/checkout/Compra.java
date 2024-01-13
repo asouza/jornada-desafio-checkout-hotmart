@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
@@ -35,22 +36,28 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 
 @Entity
+@ICP(13)
 public class Compra {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	@ManyToOne
+	@ICP
 	private Conta conta;
 	@ManyToOne
+	@ICP
 	private Oferta oferta;
 	@OneToOne(mappedBy = "compra", cascade = CascadeType.PERSIST)
+	@ICP
 	private MetadadosCompra metadados;
 	@OneToMany(mappedBy = "compra", cascade = { CascadeType.PERSIST,
 			CascadeType.MERGE })
+	@ICP
 	private List<TransacaoCompra> transacoes = new ArrayList<>();
 	private UUID codigo = UUID.randomUUID();
 	@ManyToOne
+	@ICP
 	private Cupom cupom;
 	@Version
 	private LocalDateTime instanteAtualizacao;
@@ -65,8 +72,10 @@ public class Compra {
 	@NotNull
 	private BigDecimal precoFinal;
 	@NotNull
+	@ICP
 	private QuemPagaJuros quemPagaJuros;
 	@OneToOne(mappedBy = "compra",cascade = CascadeType.PERSIST)
+	@ICP
 	private Provisionamento provisionamento;
 
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
@@ -124,6 +133,7 @@ public class Compra {
 
 	private Optional<TransacaoCompra> buscaTransacaoComStatus(
 			StatusCompra status) {
+		//@ICP
 		return this.transacoes.stream()
 				.filter(transacao -> transacao.statusIgual(status)).findFirst();
 	}
@@ -151,6 +161,7 @@ public class Compra {
 	public Optional<String> buscaIdTransacao() {
 		Optional<TransacaoCompra> possivelTransacao = buscaTransacaoComStatus(
 				StatusCompra.finalizada);
+		//@ICP
 		return possivelTransacao.flatMap(tx -> tx.buscaIdTransacao());
 
 	}
@@ -181,6 +192,7 @@ public class Compra {
 	public boolean adicionaTransacaoCondicional(StatusCompra status) {
 		assertTemTransacaoIniciada();
 
+		//@ICP
 		if (temTransacaoComStatus(status)) {
 			// TODO aqui devia ser debug
 			Log5WBuilder.metodo().oQueEstaAcontecendo("Não adicionou transacao")
@@ -211,6 +223,7 @@ public class Compra {
 				"Provisionamento só pode ser calculado para compra finalizada");
 		
 		//deixando a pre condicao mais soft... Aqui abre uma porta maior para bug, na minha opinião.
+		//@ICP
 		if(this.provisionamento != null) {
 			//devia ser debug, já que não tem a ver com o que está definido para info
 			Log5WBuilder
@@ -229,6 +242,7 @@ public class Compra {
 		TransacaoCompra transacaoFinalizacao = buscaTransacaoComStatus(
 				StatusCompra.finalizada).get();
 
+		//@ICP
 		Configuracao configuracao = this.conta.getConfiguracao();
 		
 		LocalDate dataLiberacaoPagamento = configuracao
@@ -239,6 +253,7 @@ public class Compra {
 		BigDecimal valorDeRepasse = this.precoFinal.subtract(valorComissao);		
 		BigDecimal descontoRepassePorTaxasExtras = this.metadados.calculaPossivelDescontoRepasse(quemPagaJuros, valorDeRepasse, configuracao);
 		
+		//@ICP
 		ValoresParaTodosEnvolvidos valores = new ValoresParaTodosEnvolvidos(valorComissao,valorDeRepasse,descontoRepassePorTaxasExtras);  
 				
 		this.provisionamento = new Provisionamento(this,valores,
@@ -256,7 +271,6 @@ public class Compra {
 				"O provisionamento precisa ser calculado antes. Já chamou o calculaProvisionamento?");
 		
 		this.instanteProvisionamento = LocalDateTime.now();
-		this.instanteAtualizacao = LocalDateTime.now();
 	}
 
 }
