@@ -37,6 +37,11 @@ import jakarta.validation.constraints.PastOrPresent;
 
 @Entity
 @ICP(13)
+/*
+ * A compra passa em 3 pontos do limimte de complexidade. Entretanto,
+ * majoritariamente, este limite é ultrapassado por conta dos atributos
+ * de controle. Por enquanto vou deixar como está.
+ */
 public class Compra {
 
 	@Id
