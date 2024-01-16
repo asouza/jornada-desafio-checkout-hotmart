@@ -20,11 +20,15 @@ import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
 @Component
+@ICP(16)
 public class CriaOBasicoDaCompraParaFluxosWeb {
-
+	
 	private ExecutaTransacao executaTransacao;
+	@ICP
 	private RegistraNovaContaService registraNovaContaService;
+	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
+	@ICP
 	private CupomRepository cupomRepository;
 
 	public CriaOBasicoDaCompraParaFluxosWeb(ExecutaTransacao executaTransacao,
@@ -38,9 +42,11 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 		this.cupomRepository = cupomRepository;
 	}
 
-	public CompraBuilderPasso3 executa(InfoPadraoCheckoutRequest infoPadrao,
+	
+	public @ICP CompraBuilderPasso3 executa(@ICP InfoPadraoCheckoutRequest infoPadrao,
 			String codigoProduto, String codigoOferta) throws BindException {
 
+		@ICP(2)
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return registraNovaContaService.executa(infoPadrao.getEmail());
 
@@ -51,14 +57,17 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
 						codigoProduto), 404, "Produto não encontrado");
 
-		@ICP
+		@ICP(2)
 		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
 				.orElseGet(() -> produto.getOfertaPrincipal());
 
 		// aqui podia ter ficado um passo só sim
+		@ICP
 		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
 
+		//@ICP
 		if (infoPadrao.temCodigoCupom()) {
+			@ICP(3)
 			Cupom cupom = infoPadrao.buscaCodigoCupom().flatMap(codigo -> {
 				return cupomRepository.findByCodigoAndProdutoId(codigo,
 						produto.getId());
@@ -66,6 +75,7 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 					new Object(), "error",
 					"Não existe um cupom com este código para este produto"));
 			
+			//@ICP
 			if(!cupom.isValido()) {
 				throw BindExceptionFactory.createGlobalError("O cupom não está mais válido");
 			}
