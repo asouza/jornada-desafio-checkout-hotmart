@@ -96,6 +96,12 @@ public class CompraBuilder {
 			return new CompraBuilderPasso3(conta,oferta,cupom);
 		}
 
+
+
+		public Long getProdutoId() {
+			return this.oferta.getProduto().getId();
+		}
+
 	}
 
 	public static CompraBuilderPasso2 nova(Conta conta, Oferta oferta) {

@@ -9,18 +9,15 @@ import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso2;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
 import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService;
-import com.deveficiente.desafiocheckouthotmart.compartilhado.BindExceptionFactory;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
-import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
-import com.deveficiente.desafiocheckouthotmart.cupom.CupomRepository;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
 @Component
-@ICP(16)
+@ICP(12)
 public class CriaOBasicoDaCompraParaFluxosWeb {
 	
 	private ExecutaTransacao executaTransacao;
@@ -29,17 +26,17 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
 	@ICP
-	private CupomRepository cupomRepository;
+	private FluxoAplicaoCupom fluxoAplicacaoCupom;
 
 	public CriaOBasicoDaCompraParaFluxosWeb(ExecutaTransacao executaTransacao,
 			RegistraNovaContaService registraNovaContaService,
-			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
-			CupomRepository cupomRepository) {
+			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,	
+			FluxoAplicaoCupom fluxoAplicacaoCupom) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.registraNovaContaService = registraNovaContaService;
 		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
-		this.cupomRepository = cupomRepository;
+		this.fluxoAplicacaoCupom = fluxoAplicacaoCupom;
 	}
 
 	
@@ -64,24 +61,8 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 		// aqui podia ter ficado um passo só sim
 		@ICP
 		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
-
-		//@ICP
-		if (infoPadrao.temCodigoCupom()) {
-			@ICP(3)
-			Cupom cupom = infoPadrao.buscaCodigoCupom().flatMap(codigo -> {
-				return cupomRepository.findByCodigoAndProdutoId(codigo,
-						produto.getId());
-			}).orElseThrow(() -> BindExceptionFactory.createGlobalError(
-					new Object(), "error",
-					"Não existe um cupom com este código para este produto"));
-			
-			//@ICP
-			if(!cupom.isValido()) {
-				throw BindExceptionFactory.createGlobalError("O cupom não está mais válido");
-			}
-
-			basicoDaCompra.setCupom(cupom);
-		}
+		
+		fluxoAplicacaoCupom.executa(infoPadrao,basicoDaCompra);
 
 		return basicoDaCompra.passoPagamento();
 	}
