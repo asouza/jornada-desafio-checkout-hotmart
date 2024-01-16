@@ -186,10 +186,16 @@ public class Produto {
 	 * 
 	 * @param funcaoProdutoraCupom funcao que retorna um cupom para um produto
 	 * @return true se tiver adicionado o cupom e false se já existia um igual
+	 * @throws JaExisteCupomComMesmoCodigoException 
 	 */
-	public boolean adicionaCupom(Function<Produto, Cupom> funcaoProdutoraCupom) {
+	public Cupom adicionaCupom(Function<Produto, Cupom> funcaoProdutoraCupom) throws JaExisteCupomComMesmoCodigoException {
 		Cupom novoCupom = funcaoProdutoraCupom.apply(this);
-		return this.cupons .add(novoCupom);
+		
+		if(this.cupons.add(novoCupom)) {
+			return novoCupom;
+		}
+		
+		throw new JaExisteCupomComMesmoCodigoException(novoCupom);
 	}
 
 	public Long getId() {

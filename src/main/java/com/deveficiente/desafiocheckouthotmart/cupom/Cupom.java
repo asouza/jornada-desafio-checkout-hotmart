@@ -89,6 +89,10 @@ public class Cupom {
 			return false;
 		return true;
 	}
+
+	public String getCodigo() {
+		return this.codigo;
+	}
 	
 	
 

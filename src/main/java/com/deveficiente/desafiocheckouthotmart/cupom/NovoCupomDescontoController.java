@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.BindExceptionFactory;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
+import com.deveficiente.desafiocheckouthotmart.produtos.JaExisteCupomComMesmoCodigoException;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 import com.deveficiente.desafiocheckouthotmart.produtos.ProdutoRepository;
 
@@ -35,9 +36,14 @@ public class NovoCupomDescontoController {
 				produtoRepository.findByCodigo(codigoProduto), 404,
 				"Produto inexistente");
 
-		if (!produto.adicionaCupom(request::toModel)) {
+		/*
+		 * E agora, isso ou Either?
+		 */
+		try {
+			produto.adicionaCupom(request::toModel);
+		} catch (JaExisteCupomComMesmoCodigoException e) {
 			throw BindExceptionFactory.createGlobalError(request, "error",
-					"Já existe uma oferta com o mesmo código");
+					"Já existe uma oferta com o mesmo código. "+e.getCodigoCupom());
 		}
 
 	}
