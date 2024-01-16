@@ -18,6 +18,11 @@ import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
 @Component
 @ICP(12)
+/*
+ * Alberto: O caminho que encontrei para refatorar para abaixo de
+ * 10 pontos ia basicamente levar a complexidade daqui para o outro 
+ * lugar. Não achei que estava dividindo a complexidade de fato. 
+ */
 public class CriaOBasicoDaCompraParaFluxosWeb {
 	
 	private ExecutaTransacao executaTransacao;
@@ -48,7 +53,7 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 			return registraNovaContaService.executa(infoPadrao.getEmail());
 
 		});
-
+				
 		@ICP
 		Produto produto = OptionalToHttpStatusException
 				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
