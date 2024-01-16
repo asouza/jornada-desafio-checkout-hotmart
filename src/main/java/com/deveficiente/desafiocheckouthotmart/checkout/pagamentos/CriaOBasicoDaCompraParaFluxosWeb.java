@@ -65,6 +65,10 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 			}).orElseThrow(() -> BindExceptionFactory.createGlobalError(
 					new Object(), "error",
 					"Não existe um cupom com este código para este produto"));
+			
+			if(!cupom.isValido()) {
+				throw BindExceptionFactory.createGlobalError("O cupom não está mais válido");
+			}
 
 			basicoDaCompra.setCupom(cupom);
 		}

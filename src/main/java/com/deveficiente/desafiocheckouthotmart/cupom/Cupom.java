@@ -3,6 +3,8 @@ package com.deveficiente.desafiocheckouthotmart.cupom;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.springframework.util.Assert;
+
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
@@ -43,12 +45,18 @@ public class Cupom {
 	}
 
 	public BigDecimal aplicaDesconto(BigDecimal valor) {
+		Assert.state(isValido(), "O cupom só pode ser aplicado se estiver válido. "+this.codigo);
+		
 		BigDecimal percentualRestante = new BigDecimal("100")
 				.subtract(this.percentualDesconto);
 		BigDecimal porcentagem = percentualRestante
 				.divide(new BigDecimal("100"));
 
 		return valor.multiply(porcentagem);
+	}
+
+	public boolean isValido() {
+		return LocalDateTime.now().compareTo(this.limiteUso) <= 0;
 	}
 
 	@Override

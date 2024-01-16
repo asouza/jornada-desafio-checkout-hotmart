@@ -110,9 +110,9 @@ public class Compra {
 		 * O cupom aqui pode ser nulo porque este construtor é chamado
 		 * a partir de outro. 
 		 */
-		this.precoFinal = 
+		this.precoFinal =  
 				Optional
-				.ofNullable(this.cupom)
+				.ofNullable(this.cupom)				
 				.map(cupomExistente -> cupomExistente.aplicaDesconto(this.precoMomento))
 				.orElse(this.precoMomento);
 		
