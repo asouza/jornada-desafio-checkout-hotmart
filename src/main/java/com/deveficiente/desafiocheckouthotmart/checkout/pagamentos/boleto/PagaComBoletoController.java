@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CompraId;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemplateFluxoPagamento;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
@@ -30,7 +31,7 @@ public class PagaComBoletoController {
 	@ICP
 	private FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto;
 	@ICP
-	private TemplateFluxoPagamento criaOBasicoDaCompraParaFluxosWeb;
+	private TemplateFluxoPagamento templateFluxoPagamento;
 	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
@@ -38,11 +39,11 @@ public class PagaComBoletoController {
 
 	public PagaComBoletoController(
 			@ICP FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
-			@ICP TemplateFluxoPagamento criaOBasicoDaCompraParaFluxosWeb,
+			@ICP TemplateFluxoPagamento templateFluxoPagamento,
 			EntityManager manager) {
 		super();
 		this.fluxoRealizacaoCompraBoleto = fluxoRealizacaoCompraBoleto;
-		this.criaOBasicoDaCompraParaFluxosWeb = criaOBasicoDaCompraParaFluxosWeb;
+		this.templateFluxoPagamento = templateFluxoPagamento;
 		this.manager = manager;
 	}
 
@@ -57,20 +58,13 @@ public class PagaComBoletoController {
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutBoletoRequest request) throws BindException {
 
-		CompraBuilderPasso3 basicoDaCompra = criaOBasicoDaCompraParaFluxosWeb
-				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
-
-		/*
-		 * Com esse lance do controle de fluxo, tem um monte de transacao
-		 * rolando... O melhor parece ser retornar ids e o proximo fluxo
-		 * reconstroi o objeto.
-		 */
-		Result<RuntimeException, Long> resultado = fluxoRealizacaoCompraBoleto
-				.executa(basicoDaCompra, request);
+		Result<RuntimeException, CompraId> resultado = templateFluxoPagamento
+				.executa(request, codigoProduto, codigoOferta,fluxoRealizacaoCompraBoleto
+						::executa);
 
 		if (resultado.isSuccess()) {
 			Compra compra = manager.find(Compra.class,
-					resultado.getSuccessReturn());
+					resultado.getSuccessReturn().idCompra());
 
 			return Map.of("codigoCompra", compra.getCodigo().toString(),
 					"ultimoStatus",

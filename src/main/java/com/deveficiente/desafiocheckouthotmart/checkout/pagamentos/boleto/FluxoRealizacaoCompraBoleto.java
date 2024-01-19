@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CompraId;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
@@ -86,7 +87,7 @@ public class FluxoRealizacaoCompraBoleto {
 	 * @param conta
 	 * @param request
 	 */
-	public Result<RuntimeException, Long> executa(CompraBuilderPasso3 basicoDaCompra,
+	public Result<RuntimeException, CompraId> executa(CompraBuilderPasso3 basicoDaCompra,
 			NovoCheckoutBoletoRequest request) {
 
 		BusinessFlowSteps businessFlowSteps = businessFlowRegister
@@ -183,7 +184,7 @@ public class FluxoRealizacaoCompraBoleto {
 				return idCompraAlterada;
 			});
 
-			return Result.successWithReturn(Long.valueOf(idCompraPassoGrava));
+			return Result.successWithReturn(new CompraId(Long.valueOf(idCompraPassoGrava)));
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
 			businessFlowSteps.executeOnlyOnce("enviaEmailDeFalha", () -> {

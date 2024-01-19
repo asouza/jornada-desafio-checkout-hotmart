@@ -3,12 +3,13 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto;
 import org.hibernate.validator.constraints.br.CPF;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.InfoPadraoCheckoutRequest;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemInfoPadrao;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public class NovoCheckoutBoletoRequest {
+public class NovoCheckoutBoletoRequest implements TemInfoPadrao {
 
 	@NotNull
 	@Valid
