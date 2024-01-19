@@ -10,7 +10,7 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.PartialClass;
 import com.deveficiente.desafiocheckouthotmart.cupom.Cupom;
 import com.deveficiente.desafiocheckouthotmart.cupom.CupomRepository;
 
-@PartialClass(CriaOBasicoDaCompraParaFluxosWeb.class)
+@PartialClass(TemplateFluxoPagamento.class)
 @Component
 @ICP(8)
 public class FluxoAplicaoCupom {

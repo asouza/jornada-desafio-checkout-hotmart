@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
-import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CompraId;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemplateFluxoPagamento;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.EtapaPagamento;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 
@@ -25,7 +26,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.validation.Valid;
 
 @RestController
-@ICP(10)
+@ICP(8)
 public class PagaComCartaoCreditoController {
 
 	@ICP
@@ -33,7 +34,7 @@ public class PagaComCartaoCreditoController {
 	@ICP
 	private BuscasNecessariasParaPagamento buscasNecessariasParaPagamento;
 	@ICP
-	private CriaOBasicoDaCompraParaFluxosWeb basicoDaCompraParaFluxosWeb;
+	private TemplateFluxoPagamento templateFluxoPagamento;
 
 	private EntityManager manager;
 
@@ -43,12 +44,12 @@ public class PagaComCartaoCreditoController {
 	public PagaComCartaoCreditoController(
 			@ICP FluxoRealizacaoCompraCartao fluxoRealizacaoCompraCartao,
 			@ICP BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,
-			@ICP CriaOBasicoDaCompraParaFluxosWeb basicoDaCompraParaFluxosWeb,
+			@ICP TemplateFluxoPagamento templateFluxoPagamento,
 			EntityManager manager) {
 		super();
 		this.fluxoRealizacaoCompraCartao = fluxoRealizacaoCompraCartao;
 		this.buscasNecessariasParaPagamento = buscasNecessariasParaPagamento;
-		this.basicoDaCompraParaFluxosWeb = basicoDaCompraParaFluxosWeb;
+		this.templateFluxoPagamento = templateFluxoPagamento;
 		this.manager = manager;
 	}
 
@@ -75,15 +76,18 @@ public class PagaComCartaoCreditoController {
 			@PathVariable("codigoOferta") String codigoOferta,
 			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) throws BindException {
 
-		CompraBuilderPasso3 basicoDaCompra = basicoDaCompraParaFluxosWeb
-				.executa(request.getInfoPadrao(), codigoProduto, codigoOferta);
+		//justificar a nao criacao da compra aqui por conta do estado da compra. Ela só pode nascer com uma forma de pagamento associada. 
 
-		@ICP
-		Result<RuntimeException, Long> resultado = fluxoRealizacaoCompraCartao
-				.executa(basicoDaCompra, request);
 		
+		@ICP
+		Result<RuntimeException, CompraId> resultado = templateFluxoPagamento
+				.executa(request, codigoProduto, codigoOferta,fluxoRealizacaoCompraCartao :: executa);
+
+		
+		//@ICP
 		if(resultado.isSuccess()) {
-			Compra compraCriada = manager.find(Compra.class, resultado.getSuccessReturn());
+			@ICP
+			Compra compraCriada = manager.find(Compra.class, resultado.getSuccessReturn().idCompra());
 			return new Retorno2(compraCriada.getCodigo().toString(),
 					compraCriada.getOferta().getPreco());			
 		}

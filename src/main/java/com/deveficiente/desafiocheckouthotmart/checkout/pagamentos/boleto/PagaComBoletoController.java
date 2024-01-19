@@ -16,7 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CriaOBasicoDaCompraParaFluxosWeb;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemplateFluxoPagamento;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 
@@ -30,7 +30,7 @@ public class PagaComBoletoController {
 	@ICP
 	private FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto;
 	@ICP
-	private CriaOBasicoDaCompraParaFluxosWeb criaOBasicoDaCompraParaFluxosWeb;
+	private TemplateFluxoPagamento criaOBasicoDaCompraParaFluxosWeb;
 	private EntityManager manager;
 
 	private static final Logger log = LoggerFactory
@@ -38,7 +38,7 @@ public class PagaComBoletoController {
 
 	public PagaComBoletoController(
 			@ICP FluxoRealizacaoCompraBoleto fluxoRealizacaoCompraBoleto,
-			@ICP CriaOBasicoDaCompraParaFluxosWeb criaOBasicoDaCompraParaFluxosWeb,
+			@ICP TemplateFluxoPagamento criaOBasicoDaCompraParaFluxosWeb,
 			EntityManager manager) {
 		super();
 		this.fluxoRealizacaoCompraBoleto = fluxoRealizacaoCompraBoleto;

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.util.Assert;
 
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
@@ -18,12 +19,14 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
+@ICP(2)
 public class Cupom {
 
 	@Id
 	@GeneratedValue
 	private Long id;
 	@ManyToOne
+	@ICP
 	private Produto produto;
 	private @NotBlank String codigo;
 	private @DecimalMin("1") @DecimalMax("99") BigDecimal percentualDesconto;
@@ -56,6 +59,7 @@ public class Cupom {
 	}
 
 	public boolean isValido() {
+		//@ICP
 		return LocalDateTime.now().compareTo(this.limiteUso) <= 0;
 	}
 

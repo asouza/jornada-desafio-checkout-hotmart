@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.InfoPadraoCheckoutRequest;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemInfoPadrao;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
@@ -9,7 +10,7 @@ import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-public class NovoCheckoutCartaoRequest {
+public class NovoCheckoutCartaoRequest implements TemInfoPadrao{
 
 	@NotNull
 	@Valid

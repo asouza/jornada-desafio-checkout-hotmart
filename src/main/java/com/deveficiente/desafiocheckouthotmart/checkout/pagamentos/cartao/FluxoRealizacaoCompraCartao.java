@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraBuilder.CompraBuilderPasso3;
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CompraId;
 import com.deveficiente.desafiocheckouthotmart.checkout.CompraRepository;
 import com.deveficiente.desafiocheckouthotmart.checkout.EmailsCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.FluxoEnviaEmailSucesso;
@@ -84,7 +85,7 @@ public class FluxoRealizacaoCompraCartao {
 	 * @param conta
 	 * @param request
 	 */
-	public Result<RuntimeException, Long> executa(CompraBuilderPasso3 basicoDaCompra,
+	public Result<RuntimeException, CompraId> executa(CompraBuilderPasso3 basicoDaCompra,
 			NovoCheckoutCartaoRequest request) {
 		/*
 		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
@@ -194,7 +195,7 @@ public class FluxoRealizacaoCompraCartao {
 			});
 			
 
-			return Result.successWithReturn(novaCompra.getId());
+			return Result.successWithReturn(new CompraId(novaCompra.getId()));
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
 			emailsCompra.enviaEmailFalha(novaCompra);

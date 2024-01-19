@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.deveficiente.desafiocheckouthotmart.compartilhado.BindExceptionFactory;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
 import com.deveficiente.desafiocheckouthotmart.produtos.JaExisteCupomComMesmoCodigoException;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
@@ -18,8 +19,10 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 @RestController
+@ICP(6)
 public class NovoCupomDescontoController {
 
+	@ICP
 	private ProdutoRepository produtoRepository;
 
 	public NovoCupomDescontoController(ProdutoRepository produtoRepository) {
@@ -30,8 +33,9 @@ public class NovoCupomDescontoController {
 	@PostMapping("/produtos/{codigoProduto}/cupons")
 	@Transactional
 	public void executa(@PathVariable("codigoProduto") UUID codigoProduto,
-			@Valid @RequestBody NovoCupomDescontoRequest request) throws BindException {
+			@Valid @RequestBody @ICP NovoCupomDescontoRequest request) throws BindException {
 
+		@ICP
 		Produto produto = OptionalToHttpStatusException.execute(
 				produtoRepository.findByCodigo(codigoProduto), 404,
 				"Produto inexistente");
@@ -39,9 +43,12 @@ public class NovoCupomDescontoController {
 		/*
 		 * E agora, isso ou Either?
 		 */
+		//@ICP
 		try {
 			produto.adicionaCupom(request::toModel);
-		} catch (JaExisteCupomComMesmoCodigoException e) {
+		}
+		//@ICP
+		catch (@ICP JaExisteCupomComMesmoCodigoException e) {
 			throw BindExceptionFactory.createGlobalError(request, "error",
 					"Já existe uma oferta com o mesmo código. "+e.getCodigoCupom());
 		}

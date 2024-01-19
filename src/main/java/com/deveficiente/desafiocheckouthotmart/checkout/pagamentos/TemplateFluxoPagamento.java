@@ -1,6 +1,7 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos;
 
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindException;
@@ -12,10 +13,17 @@ import com.deveficiente.desafiocheckouthotmart.checkout.RegistraNovaContaService
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ExecutaTransacao;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.OptionalToHttpStatusException;
+import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
 
+/**
+ * Representa o caminho padrão para realizar um pagamento já suportando
+ * receber uma parte do processo customizada. 
+ * @author albertoluizsouza
+ *
+ */
 @Component
 @ICP(12)
 /*
@@ -23,7 +31,7 @@ import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
  * 10 pontos ia basicamente levar a complexidade daqui para o outro 
  * lugar. Não achei que estava dividindo a complexidade de fato. 
  */
-public class CriaOBasicoDaCompraParaFluxosWeb {
+public class TemplateFluxoPagamento {
 	
 	private ExecutaTransacao executaTransacao;
 	@ICP
@@ -33,7 +41,7 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 	@ICP
 	private FluxoAplicaoCupom fluxoAplicacaoCupom;
 
-	public CriaOBasicoDaCompraParaFluxosWeb(ExecutaTransacao executaTransacao,
+	public TemplateFluxoPagamento(ExecutaTransacao executaTransacao,
 			RegistraNovaContaService registraNovaContaService,
 			BuscasNecessariasParaPagamento buscasNecessariasParaPagamento,	
 			FluxoAplicaoCupom fluxoAplicacaoCupom) {
@@ -45,9 +53,13 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 	}
 
 	
-	public @ICP CompraBuilderPasso3 executa(@ICP InfoPadraoCheckoutRequest infoPadrao,
-			String codigoProduto, String codigoOferta) throws BindException {
+	public <@ICP RequestType extends TemInfoPadrao> Result<RuntimeException, @ICP CompraId> executa(@ICP RequestType request,
+			String codigoProduto, String codigoOferta,BiFunction<@ICP  CompraBuilderPasso3, RequestType, Result<RuntimeException, CompraId>> fluxoEspecifico) throws BindException {
 
+		@ICP 
+		InfoPadraoCheckoutRequest infoPadrao = request.getInfoPadrao();
+		
+		
 		@ICP(2)
 		Conta conta = executaTransacao.comRetorno(() -> {
 			return registraNovaContaService.executa(infoPadrao.getEmail());
@@ -59,17 +71,19 @@ public class CriaOBasicoDaCompraParaFluxosWeb {
 				.execute(buscasNecessariasParaPagamento.buscaProdutoPorCodigo(
 						codigoProduto), 404, "Produto não encontrado");
 
-		@ICP(2)
-		Oferta oferta = produto.buscaOferta(UUID.fromString(codigoOferta))
-				.orElseGet(() -> produto.getOfertaPrincipal());
+		@ICP(1)
+		Oferta oferta = OptionalToHttpStatusException
+				.execute(produto.buscaOferta(UUID.fromString(codigoOferta))
+						, 404, "Oferta não encontrada");
+				
 
 		// aqui podia ter ficado um passo só sim
 		@ICP
 		CompraBuilderPasso2 basicoDaCompra = CompraBuilder.nova(conta, oferta);
 		
-		fluxoAplicacaoCupom.executa(infoPadrao,basicoDaCompra);
+		fluxoAplicacaoCupom.executa(infoPadrao,basicoDaCompra);				
 
-		return basicoDaCompra.passoPagamento();
+		return fluxoEspecifico.apply(basicoDaCompra.passoPagamento(), request);
 	}
 
 }
