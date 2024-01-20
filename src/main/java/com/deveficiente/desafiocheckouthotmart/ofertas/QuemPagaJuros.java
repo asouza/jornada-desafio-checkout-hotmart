@@ -40,6 +40,15 @@ public enum QuemPagaJuros {
 
 			return BigDecimal.ZERO;
 		}
+
+		@Override
+		public
+		ValorParcelaMes calculaParcelaEspecificaParaCliente(
+				@Positive @NotNull BigDecimal preco, BigDecimal taxaJuros,
+				@Min(1) int numeroParcelas) {
+			BigDecimal valorParcela = FormulaCalculoJuros.executa(preco, taxaJuros, numeroParcelas,5, RoundingMode.HALF_EVEN);
+			return new ValorParcelaMes(valorParcela, numeroParcelas);
+		}
 	},vendedor {
 		@Override
 		public List<ValorParcelaMes> calculaParcelasParaCliente(
@@ -68,6 +77,15 @@ public enum QuemPagaJuros {
 			
 			return descontoRepasse;
 		}
+
+		@Override
+		public
+		ValorParcelaMes calculaParcelaEspecificaParaCliente(
+				@Positive @NotNull BigDecimal preco, BigDecimal taxaJuros,
+				@Min(1) int numeroParcelas) {
+			BigDecimal valorPorMesSemJuros = preco.divide(new BigDecimal(numeroParcelas),3,RoundingMode.HALF_EVEN);
+			return new ValorParcelaMes(valorPorMesSemJuros, numeroParcelas);
+		}
 	};
 	
 	/**
@@ -82,4 +100,8 @@ public enum QuemPagaJuros {
 
 	public abstract BigDecimal calculaPossivelDescontoDeRepasse(BigDecimal valor,
 			@Positive Integer numeroParcelas, BigDecimal taxaJuros);
+
+	public abstract ValorParcelaMes calculaParcelaEspecificaParaCliente(
+			@Positive @NotNull BigDecimal preco, BigDecimal taxaJuros,
+			@Min(1) int numeroParcelas);
 }

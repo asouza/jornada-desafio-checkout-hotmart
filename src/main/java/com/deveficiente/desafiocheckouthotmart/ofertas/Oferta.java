@@ -16,7 +16,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -131,7 +130,7 @@ public class Oferta {
 	public List<ValorParcelaMes> getParcelaMes() {
 		return this.valoresParcelas;
 	}
-	
+
 	public UUID getCodigo() {
 		return codigo;
 	}
@@ -150,9 +149,11 @@ public class Oferta {
 		List<ValorParcelaMes> resultado = this.valoresParcelas.stream()
 				.filter(parcela -> parcela.numeroVezesIgual(numeroParcelas))
 				.toList();
-		
-		Assert.state(resultado.size() == 1, "Deveria ter achado a parcela para o numero de vezes = "+numeroParcelas);
-		
+
+		Assert.state(resultado.size() == 1,
+				"Deveria ter achado a parcela para o numero de vezes = "
+						+ numeroParcelas);
+
 		return resultado.get(0);
 	}
 

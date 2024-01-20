@@ -62,6 +62,15 @@ public class ValorParcelaMes {
 	public boolean numeroVezesIgual(@Positive @NotNull int numeroParcelasNecessario) {
 		return this.numeroParcelas == numeroParcelasNecessario;
 	}
+
+	/**
+	 * 
+	 * @param outro
+	 * @return respeita o contrato do Comparable aqui. 0 é igual, negativo este é menor e positivo o outor é maior
+	 */
+	public int comparaParcelas(ValorParcelaMes outro) {
+		return this.numeroParcelas - outro.numeroParcelas;
+	}
 	
 	
 
