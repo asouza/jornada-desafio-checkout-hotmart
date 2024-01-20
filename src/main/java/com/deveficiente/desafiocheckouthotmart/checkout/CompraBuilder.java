@@ -42,9 +42,9 @@ public class CompraBuilder {
 			 */
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
 				MetadadosCompra metadados = new MetadadosCompra(compra);
-				// TODO refatorar aqui. Isso aqui foi exagero
-				metadados.setInfoCompraCartao(
-						oferta -> request.toInfoCompraCartao(oferta));
+				// aqui tem que usar a compra direto, não precisa mais da oferta
+				// e com a compra na mao da para saber o valor final e qual vai ser o valor da parcela também
+				metadados.setInfoCompraCartao(request.toInfoCompraCartao(compra));
 
 				return metadados;
 			};

@@ -56,8 +56,8 @@ public class MetadadosCompra {
 		return Optional.ofNullable(infoCompraBoleto);
 	}
 
-	public void setInfoCompraCartao(Function<Oferta, InfoCompraCartao> funcaoCriadoraInfoCompraCartao) {
-		this.infoCompraCartao = funcaoCriadoraInfoCompraCartao.apply(compra.getOferta());
+	public void setInfoCompraCartao(InfoCompraCartao infoCompraCartao) {
+		this.infoCompraCartao = infoCompraCartao;
 	}
 
 	public void setInfoBoleto(InfoCompraBoleto infoCompraBoleto) {

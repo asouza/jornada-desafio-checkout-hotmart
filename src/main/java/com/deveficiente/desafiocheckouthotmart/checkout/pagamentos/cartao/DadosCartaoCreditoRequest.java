@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import org.hibernate.validator.constraints.CreditCardNumber;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.MesVencimentoCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
@@ -85,9 +86,8 @@ public class DadosCartaoCreditoRequest {
 				parcelaMes);
 	}
 
-	public InfoCompraCartao toInfoCompraCartao(Oferta oferta) {
-		ValorParcelaMes parcelaMes = oferta
-				.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
+	public InfoCompraCartao toInfoCompraCartao(Compra compra) {
+		ValorParcelaMes parcelaMes = compra.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
 
 		return new InfoCompraCartao(numeroCartao, nomeTitular,
 				parcelaMes.getValor(), parcelaMes.getNumeroParcelas(),

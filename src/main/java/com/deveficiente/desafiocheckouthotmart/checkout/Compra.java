@@ -34,6 +34,7 @@ import jakarta.persistence.Version;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Positive;
 
 @Entity
 @ICP(13)
@@ -82,6 +83,7 @@ public class Compra {
 	@OneToOne(mappedBy = "compra",cascade = CascadeType.PERSIST)
 	@ICP
 	private Provisionamento provisionamento;
+	private int numeroParcelas;
 
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
 
@@ -102,10 +104,10 @@ public class Compra {
 		this.precoMomento = oferta.getPreco();
 		this.codigoOferta = oferta.getCodigo();
 		this.codigoProduto = oferta.getProduto().getCodigo();
-		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));
-		this.metadados = funcaoCriadoraMetadados.apply(this);		
+		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));				
 		this.cupom = cupom;
 		this.quemPagaJuros = oferta.getPagaJuros();
+		this.numeroParcelas = oferta.getParcelaMes().size();				
 		/*
 		 * O cupom aqui pode ser nulo porque este construtor é chamado
 		 * a partir de outro. 
@@ -115,6 +117,9 @@ public class Compra {
 				.ofNullable(this.cupom)				
 				.map(cupomExistente -> cupomExistente.aplicaDesconto(this.precoMomento))
 				.orElse(this.precoMomento);
+		
+		//a criacao dos metadados precisa ser a ultima coisa aqui. Para passar para frente a compra com tudo certinho
+		this.metadados = funcaoCriadoraMetadados.apply(this);		
 		
 		
 	}
@@ -276,6 +281,15 @@ public class Compra {
 				"O provisionamento precisa ser calculado antes. Já chamou o calculaProvisionamento?");
 		
 		this.instanteProvisionamento = LocalDateTime.now();
+	}
+
+	public ValorParcelaMes getValorParcelaParaDeterminadoNumero(
+			@Positive int numeroParcela) {
+		//numeroParcela era um bom candidato para um tinyType. Tem semântica e é usada em alguns lugares do sistema
+		List<ValorParcelaMes> parcelasConsiderandoPrecoFinal = this.quemPagaJuros.calculaParcelasParaCliente(this.precoFinal, this.conta.getConfiguracao().getTaxaJuros(), this.numeroParcelas);
+		
+		int indiceParcelaNaLista = numeroParcela-1;
+		return parcelasConsiderandoPrecoFinal.get(indiceParcelaNaLista);
 	}
 
 }

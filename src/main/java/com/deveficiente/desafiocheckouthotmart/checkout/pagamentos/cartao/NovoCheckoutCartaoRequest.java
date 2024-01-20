@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.InfoPadraoCheckoutRequest;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemInfoPadrao;
@@ -47,7 +48,7 @@ public class NovoCheckoutCartaoRequest implements TemInfoPadrao{
 		dadosCartao.preencheInformacoesCartao(novoPagamentoGatewayCartaoRequest,oferta);
 	}
 
-	public InfoCompraCartao toInfoCompraCartao(Oferta oferta) {
-		return dadosCartao.toInfoCompraCartao(oferta);
+	public InfoCompraCartao toInfoCompraCartao(Compra compra) {
+		return dadosCartao.toInfoCompraCartao(compra);
 	}
 }

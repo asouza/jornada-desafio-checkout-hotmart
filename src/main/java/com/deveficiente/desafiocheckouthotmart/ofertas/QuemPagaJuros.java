@@ -18,7 +18,7 @@ public enum QuemPagaJuros {
 
 	cliente {
 		@Override
-		List<ValorParcelaMes> calculaParcelasParaCliente(
+		public List<ValorParcelaMes> calculaParcelasParaCliente(
 				@NotNull @Positive BigDecimal preco, BigDecimal taxaJurosAoMes,
 				@Min(1) int numeroMaximoParcelas) {
 			Assert.isTrue(numeroMaximoParcelas >= 1,
@@ -42,7 +42,7 @@ public enum QuemPagaJuros {
 		}
 	},vendedor {
 		@Override
-		List<ValorParcelaMes> calculaParcelasParaCliente(
+		public List<ValorParcelaMes> calculaParcelasParaCliente(
 				@NotNull @Positive BigDecimal preco, BigDecimal taxaJuros,
 				@Min(1) int numeroMaximoParcelas) {
 			Assert.isTrue(numeroMaximoParcelas >= 1,
@@ -69,7 +69,7 @@ public enum QuemPagaJuros {
 			return descontoRepasse;
 		}
 	};
-
+	
 	/**
 	 * 
 	 * @param preco
@@ -77,7 +77,7 @@ public enum QuemPagaJuros {
 	 * @param numeroMaximoParcelas
 	 * @return
 	 */
-	abstract List<ValorParcelaMes> calculaParcelasParaCliente(@NotNull @Positive BigDecimal preco,
+	public abstract List<ValorParcelaMes> calculaParcelasParaCliente(@NotNull @Positive BigDecimal preco,
 			BigDecimal taxaJurosAoMes, @Min(1) int numeroMaximoParcelas);
 
 	public abstract BigDecimal calculaPossivelDescontoDeRepasse(BigDecimal valor,
