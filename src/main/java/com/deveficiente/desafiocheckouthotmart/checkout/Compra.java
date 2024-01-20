@@ -83,6 +83,8 @@ public class Compra {
 	@OneToOne(mappedBy = "compra",cascade = CascadeType.PERSIST)
 	@ICP
 	private Provisionamento provisionamento;
+	@NotNull
+	private BigDecimal taxaJuros;
 
 	private static final Logger log = LoggerFactory.getLogger(Compra.class);
 
@@ -106,6 +108,7 @@ public class Compra {
 		this.transacoes.add(new TransacaoCompra(this, StatusCompra.iniciada));				
 		this.cupom = cupom;
 		this.quemPagaJuros = oferta.getPagaJuros();
+		this.taxaJuros = conta.getConfiguracao().getTaxaJuros();
 		/*
 		 * O cupom aqui pode ser nulo porque este construtor é chamado
 		 * a partir de outro. 
@@ -284,7 +287,7 @@ public class Compra {
 	public ValorParcelaMes getValorParcelaParaDeterminadoNumero(
 			@Positive int numeroParcelas) {
 		//numeroParcela era um bom candidato para um tinyType. Tem semântica e é usada em alguns lugares do sistema
-		return this.quemPagaJuros.calculaParcelaEspecificaParaCliente(this.precoFinal, this.conta.getConfiguracao().getTaxaJuros(), numeroParcelas);
+		return this.quemPagaJuros.calculaParcelaEspecificaParaCliente(this.precoFinal, this.taxaJuros, numeroParcelas);
 	}
 
 }
