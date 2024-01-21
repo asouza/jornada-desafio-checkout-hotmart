@@ -18,7 +18,6 @@ import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.BuscasNecessariasParaPagamento;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.CompraId;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemplateFluxoPagamento;
-import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.EtapaPagamento;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.ICP;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 
