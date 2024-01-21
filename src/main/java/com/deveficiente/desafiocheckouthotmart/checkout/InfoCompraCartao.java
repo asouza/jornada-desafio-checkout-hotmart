@@ -8,25 +8,38 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.FutureOrPresentYear
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-@Embeddable
+@Entity
 public class InfoCompraCartao {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 	@CreditCardNumber
+	@NotBlank
 	private String numeroCartao;
+	@NotBlank
 	private String nomeTitular;
+	@NotNull
+	@Positive
 	private BigDecimal valorParcela;
+	@NotNull
 	@Positive
 	private Integer numeroParcelas;
 	@FutureOrPresentYear
+	@NotNull
 	private Integer anoVencimento;
 	@Enumerated(EnumType.STRING)
+	@NotNull
 	private MesVencimentoCartao mes;
 	
 	@Deprecated

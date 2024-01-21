@@ -6,20 +6,31 @@ import java.time.LocalDate;
 import org.hibernate.validator.constraints.UUID;
 import org.hibernate.validator.constraints.br.CPF;
 
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public class InfoCompraBoleto {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 	@CPF
+	@NotBlank
 	private String cpf;
 	@UUID
+	@NotBlank
 	private String codigoBoleto;
-	@Min(1)
+	@Positive
+	@NotNull
 	private BigDecimal valor;
 	@FutureOrPresent
+	@NotNull
 	private LocalDate dataExpiracao;
 
 	@Deprecated

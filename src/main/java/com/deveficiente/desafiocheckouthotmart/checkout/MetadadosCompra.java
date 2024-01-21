@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -33,9 +34,11 @@ public class MetadadosCompra {
 	private Long id;
 	@OneToOne
 	private Compra compra;
-	@Embedded
+	@OneToOne(mappedBy = "metadadosCompra")
+	@Valid
 	private InfoCompraCartao infoCompraCartao;
-	@Embedded
+	@OneToOne(mappedBy = "metadadosCompra")
+	@Valid
 	private InfoCompraBoleto infoCompraBoleto;
 	
 	
@@ -44,8 +47,14 @@ public class MetadadosCompra {
 		// TODO Auto-generated constructor stub
 	}
 
-	public MetadadosCompra(Compra compra) {
+	public MetadadosCompra(Compra compra,InfoCompraCartao infoCompraCartao) {
 		this.compra = compra;
+		this.infoCompraCartao = infoCompraCartao;
+	}
+	
+	public MetadadosCompra(Compra compra,InfoCompraBoleto infoCompraBoleto) {
+		this.compra = compra;
+		this.infoCompraBoleto = infoCompraBoleto;
 	}
 
 	public Optional<InfoCompraCartao> buscaInfoCompraCartao() {
@@ -54,14 +63,6 @@ public class MetadadosCompra {
 	
 	public Optional<InfoCompraBoleto> buscaInfoCompraBoleto() {
 		return Optional.ofNullable(infoCompraBoleto);
-	}
-
-	public void setInfoCompraCartao(InfoCompraCartao infoCompraCartao) {
-		this.infoCompraCartao = infoCompraCartao;
-	}
-
-	public void setInfoBoleto(InfoCompraBoleto infoCompraBoleto) {
-		this.infoCompraBoleto = infoCompraBoleto;
 	}
 
 	public @NotNull BigDecimal calculaPossivelDescontoRepasse(

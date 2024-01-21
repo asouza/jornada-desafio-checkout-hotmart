@@ -41,11 +41,7 @@ public class CompraBuilder {
 			 * lugares.
 			 */
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
-				MetadadosCompra metadados = new MetadadosCompra(compra);
-				// aqui tem que usar a compra direto, não precisa mais da oferta
-				// e com a compra na mao da para saber o valor final e qual vai ser o valor da parcela também
-				metadados.setInfoCompraCartao(request.toInfoCompraCartao(compra));
-
+				MetadadosCompra metadados = new MetadadosCompra(compra,request.toInfoCompraCartao(compra));
 				return metadados;
 			};
 
@@ -58,8 +54,7 @@ public class CompraBuilder {
 		public Compra comBoleto(NovoCheckoutBoletoRequest request,
 				ConfiguracaoBoleto configuracaoBoleto) {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
-				MetadadosCompra metadados = new MetadadosCompra(compra);
-				metadados.setInfoBoleto(new InfoCompraBoleto(request.getCpf(),
+				MetadadosCompra metadados = new MetadadosCompra(compra,new InfoCompraBoleto(request.getCpf(),
 						configuracaoBoleto.geraCodigoParaBoleto(),
 						compra.getPreco(),
 						configuracaoBoleto.dataExpiracao(LocalDate.now())));
