@@ -15,10 +15,6 @@ public class CompraComTransacaoCarregada {
 		return compra.calculaProvisionamento();
 	}
 
-	public void provisionouOPagamento() {
-		compra.provisionouOPagamento();
-	}
-
 	public UUID getCodigo() {
 		return compra.getCodigo();
 	}

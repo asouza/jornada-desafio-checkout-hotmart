@@ -55,9 +55,8 @@ public class CompraBuilder {
 				ConfiguracaoBoleto configuracaoBoleto) {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
 				MetadadosCompra metadados = new MetadadosCompra(compra,new InfoCompraBoleto(request.getCpf(),
-						configuracaoBoleto.geraCodigoParaBoleto(),
-						compra.getPreco(),
-						configuracaoBoleto.dataExpiracao(LocalDate.now())));
+						configuracaoBoleto,
+						compra.getPrecoFinal()));
 
 				return metadados;
 			};

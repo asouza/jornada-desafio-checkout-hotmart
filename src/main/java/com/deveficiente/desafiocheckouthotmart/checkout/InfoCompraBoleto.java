@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import org.hibernate.validator.constraints.UUID;
 import org.hibernate.validator.constraints.br.CPF;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.ConfiguracaoBoleto;
+
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,15 +40,12 @@ public class InfoCompraBoleto {
 		// TODO Auto-generated constructor stub
 	}
 
-	public InfoCompraBoleto(@NotBlank @CPF String cpf,
-			@NotBlank @UUID String codigoBoleto,
-			@NotNull @Min(1) BigDecimal valor,
-			@FutureOrPresent LocalDate dataExpiracao) {
-		super();
+	public InfoCompraBoleto(String cpf, ConfiguracaoBoleto configuracaoBoleto,
+			@NotNull @Min(1) BigDecimal preco) {
 		this.cpf = cpf;
-		this.codigoBoleto = codigoBoleto;
-		this.valor = valor;
-		this.dataExpiracao = dataExpiracao;
+		this.codigoBoleto = configuracaoBoleto.geraCodigoParaBoleto();
+		this.valor = preco;
+		this.dataExpiracao = configuracaoBoleto.dataExpiracao(LocalDate.now());		
 	}
 
 	public String getCpf() {

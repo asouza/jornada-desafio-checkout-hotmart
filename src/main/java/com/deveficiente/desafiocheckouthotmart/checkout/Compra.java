@@ -32,6 +32,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
@@ -67,8 +68,6 @@ public class Compra {
 	private Cupom cupom;
 	@Version
 	private LocalDateTime instanteAtualizacao;
-	@PastOrPresent
-	private LocalDateTime instanteProvisionamento;
 	@NotNull
 	private BigDecimal precoMomento;
 	@NotNull
@@ -273,21 +272,14 @@ public class Compra {
 		return this.provisionamento;
 	}
 
-	public void provisionouOPagamento() {
-		// aqui poderia só ignorar a chamada e logar. Outra opcao...
-		Assert.state(Objects.isNull(this.instanteProvisionamento),
-				"Compra já foi provisionada");
-		
-		Assert.state(Objects.nonNull(this.provisionamento),
-				"O provisionamento precisa ser calculado antes. Já chamou o calculaProvisionamento?");
-		
-		this.instanteProvisionamento = LocalDateTime.now();
-	}
-
 	public ValorParcelaMes getValorParcelaParaDeterminadoNumero(
 			@Positive int numeroParcelas) {
 		//numeroParcela era um bom candidato para um tinyType. Tem semântica e é usada em alguns lugares do sistema
 		return this.quemPagaJuros.calculaParcelaEspecificaParaCliente(this.precoFinal, this.taxaJuros, numeroParcelas);
+	}
+
+	public @NotNull @Min(1) BigDecimal getPrecoFinal() {
+		return this.precoFinal;
 	}
 
 }

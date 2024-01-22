@@ -65,12 +65,6 @@ public class CalculaValoresAReceberPorCompra {
 			try {
 				executaTransacao.semRetorno(() -> {
 					manager.persist(novoProvisionamento);
-					/*
-					 * A compra tem uma versão para suportar que o
-					 * provisionamento possa ser executado por multiplas
-					 * instancias.
-					 */
-					compra.provisionouOPagamento();
 					
 					//Chamo o merge pq a compra foi carregada em outro contexto transacional
 					manager.merge(compra.getCompra());
