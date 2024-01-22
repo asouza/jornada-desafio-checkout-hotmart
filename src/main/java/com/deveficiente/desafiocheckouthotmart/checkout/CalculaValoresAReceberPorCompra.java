@@ -59,21 +59,21 @@ public class CalculaValoresAReceberPorCompra {
 		 * também poderia usar a solução proposta por Rafael Ponte aqui
 		 * https://www.youtube.com/watch?v=I_kEO_HPfBU&t=1399s
 		 */
-		for (CompraComTransacaoCarregada compra : comprasFinalizadas) {
-			Provisionamento novoProvisionamento = compra
+		for (CompraComTransacaoCarregada compraComTransacaoCarregada : comprasFinalizadas) {
+			Provisionamento novoProvisionamento = compraComTransacaoCarregada
 					.calculaProvisionamento();
 			try {
 				executaTransacao.semRetorno(() -> {
 					manager.persist(novoProvisionamento);
 					
 					//Chamo o merge pq a compra foi carregada em outro contexto transacional
-					manager.merge(compra.getCompra());
+					manager.merge(compraComTransacaoCarregada.getCompra());
 				});
 			} catch (OptimisticLockException e) {
 				Log5WBuilder.metodo().oQueEstaAcontecendo(
 						"Aconteceu um problema de provisionamento por conta de atualizacao concorrente")
 						.adicionaInformacao("codigoCompra",
-								compra.getCodigo().toString())
+								compraComTransacaoCarregada.getCodigo().toString())
 						.erro(log, e);
 			}
 
@@ -81,7 +81,7 @@ public class CalculaValoresAReceberPorCompra {
 				Log5WBuilder.metodo().oQueEstaAcontecendo(
 						"Aconteceu um problema de provisionamento desconhecido")
 						.adicionaInformacao("codigoCompra",
-								compra.getCodigo().toString())
+								compraComTransacaoCarregada.getCodigo().toString())
 						.erro(log, e);
 			}
 		}
