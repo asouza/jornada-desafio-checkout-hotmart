@@ -252,12 +252,12 @@ public class Compra {
 		TransacaoCompra transacaoFinalizacao = buscaTransacaoComStatus(
 				StatusCompra.finalizada).get();
 
-		//@ICP
-		Configuracao configuracao = this.conta.getConfiguracao();
 		
-		LocalDate dataLiberacaoPagamento = configuracao
+		LocalDate dataLiberacaoPagamento = conta
 				.calculaDiaPagamento(transacaoFinalizacao);
 		 
+		
+		Configuracao configuracao = this.conta.getConfiguracao();
 		
 		BigDecimal valorComissao = configuracao.calculaComissao(this.precoFinal);
 		BigDecimal valorDeRepasse = this.precoFinal.subtract(valorComissao);		

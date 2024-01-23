@@ -67,7 +67,10 @@ public class CalculaValoresAReceberPorCompra {
 					manager.persist(novoProvisionamento);
 					
 					//Chamo o merge pq a compra foi carregada em outro contexto transacional
+					//#acoplamentoMental Como eu sei que preciso chamar o merge?
+					//Eu so sei, pq codei a função e a chamada dela.
 					manager.merge(compraComTransacaoCarregada.getCompra());
+					
 				});
 			} catch (OptimisticLockException e) {
 				Log5WBuilder.metodo().oQueEstaAcontecendo(

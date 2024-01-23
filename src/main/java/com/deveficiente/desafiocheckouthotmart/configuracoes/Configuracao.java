@@ -51,13 +51,6 @@ public class Configuracao {
 		return this.taxaJuros;
 	}
 
-	public LocalDate calculaDiaPagamento(TransacaoCompra tx) {
-		// aqui poderia receber uma data e pronto
-//		return tx.getInstante().plusDays(30).toLocalDate();
-		
-		//essa versão segue o algoritmo de deixar operacao sobre atributo dentro da classe
-		return tx.somaDiasAoInstante(30).toLocalDate();
-	}
 
 	public boolean isDefault() {
 		return opcaoDefault;

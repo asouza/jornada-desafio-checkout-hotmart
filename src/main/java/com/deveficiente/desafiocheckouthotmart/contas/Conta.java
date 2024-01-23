@@ -1,10 +1,12 @@
 package com.deveficiente.desafiocheckouthotmart.contas;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
+import com.deveficiente.desafiocheckouthotmart.checkout.TransacaoCompra;
 import com.deveficiente.desafiocheckouthotmart.compartilhado.Result;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
@@ -102,6 +104,14 @@ public class Conta {
 		return email;
 	}
 
+
+	public LocalDate calculaDiaPagamento(TransacaoCompra tx) {
+		// aqui poderia receber uma data e pronto
+//		return tx.getInstante().plusDays(30).toLocalDate();
+		
+		//essa versão segue o algoritmo de deixar operacao sobre atributo dentro da classe
+		return tx.somaDiasAoInstante(30).toLocalDate();
+	}
     
 
 }
