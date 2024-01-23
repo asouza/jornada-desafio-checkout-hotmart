@@ -22,8 +22,8 @@ import java.util.Optional;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class PostMappingAspect {
 
 	@Autowired

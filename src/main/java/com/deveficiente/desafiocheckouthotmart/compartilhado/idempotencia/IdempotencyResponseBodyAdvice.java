@@ -19,7 +19,7 @@ import com.deveficiente.desafiocheckouthotmart.compartilhado.Log5WBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.HttpServletRequest;
 
-@ControllerAdvice
+//@ControllerAdvice
 public class IdempotencyResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 	
 	@Autowired
