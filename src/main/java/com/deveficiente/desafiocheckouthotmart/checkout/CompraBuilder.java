@@ -41,8 +41,7 @@ public class CompraBuilder {
 			 * lugares.
 			 */
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
-				MetadadosCompra metadados = new MetadadosCompra(compra,request.toInfoCompraCartao(compra));
-				return metadados;
+				return MetadadosCompra.comCartao(compra, request :: toInfoCompraCartao);
 			};
 
 			return possivelCupom
@@ -54,12 +53,10 @@ public class CompraBuilder {
 		public Compra comBoleto(NovoCheckoutBoletoRequest request,
 				ConfiguracaoBoleto configuracaoBoleto) {
 			Function<Compra, MetadadosCompra> funcaoCriadoraMetadados = compra -> {
-				MetadadosCompra metadados = new MetadadosCompra(compra,new InfoCompraBoleto(request.getCpf(),
-						configuracaoBoleto,
-						compra.getPrecoFinal()));
-
-				return metadados;
+				return MetadadosCompra.comBoleto(compra,metadados -> new InfoCompraBoleto(metadados,request.getCpf(),
+						configuracaoBoleto));
 			};
+			
 
 			return possivelCupom
 					.map(cupom -> new Compra(conta, oferta, cupom,funcaoCriadoraMetadados))

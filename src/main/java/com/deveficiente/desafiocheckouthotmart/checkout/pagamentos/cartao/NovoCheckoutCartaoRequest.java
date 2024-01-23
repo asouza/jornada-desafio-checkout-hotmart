@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
+import com.deveficiente.desafiocheckouthotmart.checkout.MetadadosCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.InfoPadraoCheckoutRequest;
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.TemInfoPadrao;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
@@ -48,7 +49,7 @@ public class NovoCheckoutCartaoRequest implements TemInfoPadrao{
 		dadosCartao.preencheInformacoesCartao(novoPagamentoGatewayCartaoRequest,oferta);
 	}
 
-	public InfoCompraCartao toInfoCompraCartao(Compra compra) {
-		return dadosCartao.toInfoCompraCartao(compra);
+	public InfoCompraCartao toInfoCompraCartao(MetadadosCompra metadadosCompra) {
+		return dadosCartao.toInfoCompraCartao(metadadosCompra);
 	}
 }

@@ -8,15 +8,18 @@ import org.hibernate.validator.constraints.br.CPF;
 
 import com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.boleto.ConfiguracaoBoleto;
 
+import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+@Entity
 public class InfoCompraBoleto {
 
 	@Id
@@ -34,17 +37,19 @@ public class InfoCompraBoleto {
 	@FutureOrPresent
 	@NotNull
 	private LocalDate dataExpiracao;
+	@OneToOne
+	private MetadadosCompra metadadosCompra;
 
 	@Deprecated
 	public InfoCompraBoleto() {
 		// TODO Auto-generated constructor stub
 	}
 
-	public InfoCompraBoleto(String cpf, ConfiguracaoBoleto configuracaoBoleto,
-			@NotNull @Min(1) BigDecimal preco) {
+	public InfoCompraBoleto(MetadadosCompra metadadosCompra, String cpf, ConfiguracaoBoleto configuracaoBoleto) {
+		this.metadadosCompra = metadadosCompra;
 		this.cpf = cpf;
 		this.codigoBoleto = configuracaoBoleto.geraCodigoParaBoleto();
-		this.valor = preco;
+		this.valor = metadadosCompra.getCompra().getPrecoFinal();
 		this.dataExpiracao = configuracaoBoleto.dataExpiracao(LocalDate.now());		
 	}
 

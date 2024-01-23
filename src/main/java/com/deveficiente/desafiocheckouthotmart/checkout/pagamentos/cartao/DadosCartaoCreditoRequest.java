@@ -5,6 +5,7 @@ import org.hibernate.validator.constraints.CreditCardNumber;
 import com.deveficiente.desafiocheckouthotmart.checkout.Compra;
 import com.deveficiente.desafiocheckouthotmart.checkout.InfoCompraCartao;
 import com.deveficiente.desafiocheckouthotmart.checkout.MesVencimentoCartao;
+import com.deveficiente.desafiocheckouthotmart.checkout.MetadadosCompra;
 import com.deveficiente.desafiocheckouthotmart.checkout.ValorParcelaMes;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.NovoPagamentoGatewayCartaoRequest;
 import com.deveficiente.desafiocheckouthotmart.clientesremotos.gateway1cartao.NovoPagamentoGatewayCartao1Request;
@@ -86,12 +87,12 @@ public class DadosCartaoCreditoRequest {
 				parcelaMes);
 	}
 
-	public InfoCompraCartao toInfoCompraCartao(Compra compra) {
-		ValorParcelaMes parcelaMes = compra.getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
+	public InfoCompraCartao toInfoCompraCartao(MetadadosCompra metadadosCompra) {
+		ValorParcelaMes parcelaMes = metadadosCompra.getCompra().getValorParcelaParaDeterminadoNumero(this.numeroParcelas);
 
 		return new InfoCompraCartao(numeroCartao, nomeTitular,
 				parcelaMes.getValor(), parcelaMes.getNumeroParcelas(),
-				this.anoVencimento, this.mes.getMesTexto());
+				this.anoVencimento, this.mes.getMesTexto(),metadadosCompra);
 	}
 
 }

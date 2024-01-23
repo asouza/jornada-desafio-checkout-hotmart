@@ -8,6 +8,7 @@ import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,10 +35,10 @@ public class MetadadosCompra {
 	private Long id;
 	@OneToOne
 	private Compra compra;
-	@OneToOne(mappedBy = "metadadosCompra")
+	@OneToOne(mappedBy = "metadadosCompra",cascade = CascadeType.PERSIST)
 	@Valid
 	private InfoCompraCartao infoCompraCartao;
-	@OneToOne(mappedBy = "metadadosCompra")
+	@OneToOne(mappedBy = "metadadosCompra",cascade = CascadeType.PERSIST)
 	@Valid
 	private InfoCompraBoleto infoCompraBoleto;
 	
@@ -46,15 +47,21 @@ public class MetadadosCompra {
 	public MetadadosCompra() {
 		// TODO Auto-generated constructor stub
 	}
-
-	public MetadadosCompra(Compra compra,InfoCompraCartao infoCompraCartao) {
+	
+	private MetadadosCompra(Compra compra) {
 		this.compra = compra;
-		this.infoCompraCartao = infoCompraCartao;
 	}
 	
-	public MetadadosCompra(Compra compra,InfoCompraBoleto infoCompraBoleto) {
-		this.compra = compra;
-		this.infoCompraBoleto = infoCompraBoleto;
+	public static MetadadosCompra comCartao(Compra compra,Function<MetadadosCompra, InfoCompraCartao> funcaoCriadora) {
+		MetadadosCompra metadadosCompra = new MetadadosCompra(compra);
+		metadadosCompra.infoCompraCartao = funcaoCriadora.apply(metadadosCompra);
+		return metadadosCompra;
+	}
+	
+	public static MetadadosCompra comBoleto(Compra compra,Function<MetadadosCompra, InfoCompraBoleto> funcaoCriadora) {
+		MetadadosCompra metadadosCompra = new MetadadosCompra(compra);
+		metadadosCompra.infoCompraBoleto = funcaoCriadora.apply(metadadosCompra);
+		return metadadosCompra;
 	}
 
 	public Optional<InfoCompraCartao> buscaInfoCompraCartao() {
@@ -73,6 +80,10 @@ public class MetadadosCompra {
 		}
 		
 		return valor;
+	}
+
+	public Compra getCompra() {
+		return compra;
 	}
 
 }

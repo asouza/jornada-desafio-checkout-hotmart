@@ -14,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -41,6 +42,8 @@ public class InfoCompraCartao {
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	private MesVencimentoCartao mes;
+	@OneToOne
+	private MetadadosCompra metadadosCompra;
 	
 	@Deprecated
 	public InfoCompraCartao() {
@@ -49,12 +52,13 @@ public class InfoCompraCartao {
 
 	public InfoCompraCartao(String numeroCartao, String nomeTitular,
 			BigDecimal valorParcela, int numeroParcelas, int anoVencimento,
-			String mes) {
+			String mes,MetadadosCompra metadadosCompra) {
 				this.numeroCartao = numeroCartao;
 				this.nomeTitular = nomeTitular;
 				this.valorParcela = valorParcela;
 				this.numeroParcelas = numeroParcelas;
 				this.anoVencimento = anoVencimento;
+				this.metadadosCompra = metadadosCompra;
 				this.mes = MesVencimentoCartao.from(mes);
 	}
 

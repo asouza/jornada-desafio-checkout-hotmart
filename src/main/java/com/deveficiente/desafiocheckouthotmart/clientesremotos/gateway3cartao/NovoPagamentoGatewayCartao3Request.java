@@ -86,8 +86,4 @@ public class NovoPagamentoGatewayCartao3Request implements NovoPagamentoGatewayC
 				+ valorParcela + ", numeroParcelas=" + numeroParcelas + "]";
 	}
 
-	public InfoCompraCartao toInfoCompraCartao() {
-		return new InfoCompraCartao(this.numeroCartao,this.nomeTitular,this.valorParcela,this.numeroParcelas,this.anoVencimento,this.mes);
-	}
-
 }

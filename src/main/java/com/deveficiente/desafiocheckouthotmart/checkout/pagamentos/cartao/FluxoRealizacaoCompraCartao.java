@@ -84,9 +84,10 @@ public class FluxoRealizacaoCompraCartao {
 	 * @param oferta
 	 * @param conta
 	 * @param request
+	 * @param chaveIdempotencia 
 	 */
 	public Result<RuntimeException, CompraId> executa(CompraBuilderPasso3 basicoDaCompra,
-			NovoCheckoutCartaoRequest request) {
+			NovoCheckoutCartaoRequest request, String chaveIdempotencia) {
 		/*
 		 * Essa ideia aqui morre com múltiplos gateways. Vai ser necessário
 		 * inverter a decisão... Passa a request para construir o dto específico
@@ -103,7 +104,7 @@ public class FluxoRealizacaoCompraCartao {
 //				.toPagamentoGatewayCartaoRequest(oferta);
 
 		BusinessFlowSteps businessFlow = businessFlowRegister.execute(
-				"compraCartao", basicoDaCompra.getCombinacaoContaOferta());
+				"compraCartao", chaveIdempotencia);
 
 		String idNovaCompra = businessFlow.executeOnlyOnce("criaCompra", () -> {
 			return executaTransacao.comRetorno(() -> {

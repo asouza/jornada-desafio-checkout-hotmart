@@ -78,10 +78,6 @@ public class NovoPagamentoGatewayCartao2Request implements NovoPagamentoGatewayC
 				+ valorParcela + ", numeroParcelas=" + numeroParcelas + "]";
 	}
 
-	public InfoCompraCartao toInfoCompraCartao() {
-		return new InfoCompraCartao(this.numeroCartao,this.nomeTitular,this.valorParcela,this.numeroParcelas,this.anoVencimento,this.mes);
-	}
-
 	@Override
 	public void preencheDados(String numeroCartao, String nomeTitular,
 			String mes, int anoVencimento, ValorParcelaMes valorParcelaMes) {

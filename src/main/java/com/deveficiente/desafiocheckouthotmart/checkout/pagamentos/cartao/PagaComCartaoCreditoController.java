@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -73,14 +74,16 @@ public class PagaComCartaoCreditoController {
 	@PostMapping("/checkouts/produtos/{codigoProduto}/{codigoOferta}")
 	public Retorno2 executa(@PathVariable("codigoProduto") String codigoProduto,
 			@PathVariable("codigoOferta") String codigoOferta,
-			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request) throws BindException {
+			@Valid @RequestBody @ICP NovoCheckoutCartaoRequest request,@RequestHeader("Idempotency-Key") String chaveIdempotencia) throws BindException {
 
 		//justificar a nao criacao da compra aqui por conta do estado da compra. Ela só pode nascer com uma forma de pagamento associada. 
 
 		
 		@ICP
 		Result<RuntimeException, CompraId> resultado = templateFluxoPagamento
-				.executa(request, codigoProduto, codigoOferta,fluxoRealizacaoCompraCartao :: executa);
+				.executa(request, codigoProduto, codigoOferta,(passoConfiguraPagamentoCompra,requestEspecifico) -> {
+					return fluxoRealizacaoCompraCartao.executa(passoConfiguraPagamentoCompra,requestEspecifico,chaveIdempotencia);
+				});
 
 		
 		//@ICP
