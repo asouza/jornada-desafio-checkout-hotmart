@@ -25,7 +25,7 @@ public class Configuracao {
 	private @NotNull boolean opcaoDefault;
 
 	@Deprecated
-	Configuracao() {
+	public Configuracao() {
 
 	}
 
@@ -61,4 +61,7 @@ public class Configuracao {
 		return precoFinal.multiply(percentualComissao);
 	}
 
+	public Long getId() {
+		return id;
+	}
 }
