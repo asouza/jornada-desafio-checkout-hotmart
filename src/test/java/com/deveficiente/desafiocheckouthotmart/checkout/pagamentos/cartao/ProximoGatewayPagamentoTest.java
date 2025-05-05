@@ -155,4 +155,43 @@ class ProximoGatewayPagamentoTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class, gatewaySupplier::get);
         assertTrue(exception.getMessage().contains("Aparentemente ficamos sem opcoes"));
     }
+    
+    @Test
+    @DisplayName("Deve alternar entre gateways disponíveis quando um é desabilitado em produção")
+    void deveAlternarEntreGatewaysDisponiveisQuandoUmEDesabilitadoDinamicamente() {
+        // Arrange
+        // Configurar mock para armazenar estado - todos os gateways inicialmente habilitados
+        Function<Compra,String> mockFuncaoGateway1 = compra -> "id-gateway1";
+        Function<Compra,String> mockFuncaoGateway2 = compra -> "id-gateway2";
+        Function<Compra,String> mockFuncaoGateway3 = compra -> "id-gateway3";
+        
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway1"), any())).thenReturn(Optional.of(mockFuncaoGateway1));
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway2"), any())).thenReturn(Optional.of(mockFuncaoGateway2));
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway3"), any())).thenReturn(Optional.of(mockFuncaoGateway3));
+        
+        ProximoGatewayPagamento proximoGatewayPagamento = new ProximoGatewayPagamento(
+                gateway1ClientMock, gateway2ClientMock, gateway3ClientMock, featureFlagServiceMock);
+        
+        // Primeiro ciclo - todos os gateways disponíveis
+        assertEquals("id-gateway1", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway2", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway3", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        
+        // Simulando desligamento do gateway1 em produção
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway1"), any())).thenReturn(Optional.empty());
+        
+        // Próximo ciclo deve pular gateway1 e continuar apenas com gateway2 e gateway3
+        assertEquals("id-gateway2", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway3", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway2", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        
+        // Simulando religamento do gateway1 e desligamento do gateway2
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway1"), any())).thenReturn(Optional.of(mockFuncaoGateway1));
+        when(featureFlagServiceMock.optionalizeFeature(Mockito.eq("gateway2"), any())).thenReturn(Optional.empty());
+        
+        // Próximo ciclo deve usar gateway1 e gateway3
+        assertEquals("id-gateway3", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway1", proximoGatewayPagamento.proximoGateway(compraMock).get());
+        assertEquals("id-gateway3", proximoGatewayPagamento.proximoGateway(compraMock).get());
+    }
 }
