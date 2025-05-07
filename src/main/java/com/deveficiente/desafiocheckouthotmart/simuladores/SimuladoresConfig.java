@@ -66,13 +66,19 @@ public class SimuladoresConfig {
     
     @Bean
     @ConditionalOnProperty(name = "simuladores.habilitado", havingValue = "true", matchIfMissing = false)
-    public SimuladorGateway2CartaoController simuladorGateway2CartaoController() {
+    public SimuladorGateway2CartaoController simuladorGateway2CartaoController(
+            SimulationOrchestrator orchestrator,
+            ResourceContentionEmulator contentionEmulator,
+            SimulationConfiguration configuration) {
         return new SimuladorGateway2CartaoController();
     }
     
     @Bean
     @ConditionalOnProperty(name = "simuladores.habilitado", havingValue = "true", matchIfMissing = false)
-    public SimuladorGateway3CartaoController simuladorGateway3CartaoController() {
+    public SimuladorGateway3CartaoController simuladorGateway3CartaoController(
+            SimulationOrchestrator orchestrator,
+            NetworkConditionSimulator networkSimulator,
+            SimulationConfiguration configuration) {
         return new SimuladorGateway3CartaoController();
     }
     
