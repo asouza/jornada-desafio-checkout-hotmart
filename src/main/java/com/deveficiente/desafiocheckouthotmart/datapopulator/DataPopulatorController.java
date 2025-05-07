@@ -11,6 +11,8 @@ import com.deveficiente.desafiocheckouthotmart.configuracoes.Configuracao;
 import com.deveficiente.desafiocheckouthotmart.configuracoes.ConfiguracaoRepository;
 import com.deveficiente.desafiocheckouthotmart.contas.Conta;
 import com.deveficiente.desafiocheckouthotmart.contas.ContaRepository;
+import com.deveficiente.desafiocheckouthotmart.featureflag.FeatureFlag;
+import com.deveficiente.desafiocheckouthotmart.featureflag.FeatureFlagRepository;
 import com.deveficiente.desafiocheckouthotmart.ofertas.Oferta;
 import com.deveficiente.desafiocheckouthotmart.ofertas.QuemPagaJuros;
 import com.deveficiente.desafiocheckouthotmart.produtos.Produto;
@@ -32,15 +34,18 @@ public class DataPopulatorController {
     private final ConfiguracaoRepository configuracaoRepository;
     private final ContaRepository contaRepository;
     private final ProdutoRepository produtoRepository;
+    private final FeatureFlagRepository featureFlagRepository;
     private final Random random = new Random();
 
     public DataPopulatorController(
             ConfiguracaoRepository configuracaoRepository,
             ContaRepository contaRepository,
-            ProdutoRepository produtoRepository) {
+            ProdutoRepository produtoRepository,
+            FeatureFlagRepository featureFlagRepository) {
         this.configuracaoRepository = configuracaoRepository;
         this.contaRepository = contaRepository;
         this.produtoRepository = produtoRepository;
+        this.featureFlagRepository = featureFlagRepository;
     }
 
     /**
@@ -49,10 +54,11 @@ public class DataPopulatorController {
      * - 10.000 contas associadas à configuração default
      * - 2 produtos para cada conta
      * - 2 ofertas por produto, uma com juros pago pelo cliente e outra pelo vendedor
+     * - Feature flags necessárias para o sistema (gateway1, gateway2, gateway3 e servico-email)
      */
-    @PostMapping("/checkout-data")
+    @PostMapping("/setup-data")
     @Transactional
-    public ResponseEntity<Map<String, Object>> populateCheckoutData() {
+    public ResponseEntity<Map<String, Object>> setupApplicationData() {
         long startTime = System.currentTimeMillis();
         Map<String, Object> response = new HashMap<>();
         
@@ -60,6 +66,10 @@ public class DataPopulatorController {
             // Cria configuração default (se não existir)
             Configuracao configuracao = getOrCreateDefaultConfiguration();
             response.put("configurationCreated", true);
+            
+            // Cria as feature flags necessárias
+            createFeatureFlags();
+            response.put("featureFlagsCreated", true);
             
             // Cria 10.000 contas
             int totalContas = 10000;
@@ -93,6 +103,30 @@ public class DataPopulatorController {
             response.put("error", e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
+    }
+    
+    /**
+     * Cria feature flags necessárias: gateway1, gateway2, gateway3 e servico-email
+     * Todas são habilitadas por padrão
+     */
+    private void createFeatureFlags() {
+        createFeatureFlag("gateway1", true);
+        createFeatureFlag("gateway2", true);
+        createFeatureFlag("gateway3", true);
+        createFeatureFlag("servico-email", true);
+        
+        System.out.println("Feature flags criadas com sucesso: gateway1, gateway2, gateway3, servico-email!");
+    }
+    
+    /**
+     * Cria uma feature flag caso não exista
+     */
+    private FeatureFlag createFeatureFlag(String codigo, boolean habilitada) {
+        return featureFlagRepository.findByCodigo(codigo)
+                .orElseGet(() -> {
+                    FeatureFlag novaFeatureFlag = new FeatureFlag(codigo, habilitada);
+                    return featureFlagRepository.save(novaFeatureFlag);
+                });
     }
 
     /**
