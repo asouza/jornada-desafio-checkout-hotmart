@@ -49,6 +49,14 @@ public class FeatureFlag {
         return habilitada;
     }
     
+    public void disable() {
+        this.habilitada = false;
+    }
+    
+    public void enable() {
+        this.habilitada = true;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

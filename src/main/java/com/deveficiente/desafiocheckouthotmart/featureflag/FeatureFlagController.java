@@ -38,4 +38,28 @@ public class FeatureFlagController {
         
         return ResponseEntity.ok(new FeatureFlagStatusResponse(featureFlag.isHabilitada()));
     }
+    
+    @PostMapping("/{codigo}/disable")
+    @Transactional
+    public ResponseEntity<FeatureFlagStatusResponse> disableFeatureFlag(@PathVariable String codigo) {
+        FeatureFlag featureFlag = featureFlagRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feature flag não encontrada: " + codigo));
+        
+        featureFlag.disable();
+        featureFlagRepository.save(featureFlag);
+        
+        return ResponseEntity.ok(new FeatureFlagStatusResponse(featureFlag.isHabilitada()));
+    }
+    
+    @PostMapping("/{codigo}/enable")
+    @Transactional
+    public ResponseEntity<FeatureFlagStatusResponse> enableFeatureFlag(@PathVariable String codigo) {
+        FeatureFlag featureFlag = featureFlagRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feature flag não encontrada: " + codigo));
+        
+        featureFlag.enable();
+        featureFlagRepository.save(featureFlag);
+        
+        return ResponseEntity.ok(new FeatureFlagStatusResponse(featureFlag.isHabilitada()));
+    }
 }
