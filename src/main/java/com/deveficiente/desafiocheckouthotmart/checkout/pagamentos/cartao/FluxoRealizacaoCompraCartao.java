@@ -2,6 +2,7 @@ package com.deveficiente.desafiocheckouthotmart.checkout.pagamentos.cartao;
 
 import java.util.function.Supplier;
 
+import com.deveficiente.desafiocheckouthotmart.featureflag.FeatureFlagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ import io.github.resilience4j.retry.Retry;
 @Component
 public class FluxoRealizacaoCompraCartao {
 
+	private FeatureFlagService featureFlagService;
 	private ExecutaTransacao executaTransacao;
 	@ICP
 	private CompraRepository compraRepository;
@@ -56,13 +58,13 @@ public class FluxoRealizacaoCompraCartao {
 	private BusinessFlowRegister businessFlowRegister;
 
 	public FluxoRealizacaoCompraCartao(ExecutaTransacao executaTransacao,
-			CompraRepository compraRepository,
-			RemoteHttpClient remoteHttpClient,
-			CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
-			ProximoGatewayPagamento proximoGatewayPagamento,
-			EmailsCompra emailsCompra, CircuitBreaker circuitBreakerCartao,
-			FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso,
-			BusinessFlowRegister businessFlowRegister) {
+									   CompraRepository compraRepository,
+									   RemoteHttpClient remoteHttpClient,
+									   CartaoGateway1Client cartaoGatewayClient, Retry retryCartao,
+									   ProximoGatewayPagamento proximoGatewayPagamento,
+									   EmailsCompra emailsCompra, CircuitBreaker circuitBreakerCartao,
+									   FluxoEnviaEmailSucesso fluxoEnviaEmailSucesso,
+									   BusinessFlowRegister businessFlowRegister, FeatureFlagService featureFlagService) {
 		super();
 		this.executaTransacao = executaTransacao;
 		this.compraRepository = compraRepository;
@@ -74,6 +76,7 @@ public class FluxoRealizacaoCompraCartao {
 		this.circuitBreakerCartao = circuitBreakerCartao;
 		this.fluxoEnviaEmailSucesso = fluxoEnviaEmailSucesso;
 		this.businessFlowRegister = businessFlowRegister;
+		this.featureFlagService = featureFlagService;
 	}
 
 	private static final Logger log = LoggerFactory
@@ -190,8 +193,10 @@ public class FluxoRealizacaoCompraCartao {
 			
 
 			businessFlow.executeOnlyOnce("enviaEmailSucesso", () -> {
-				System.out.println("Enviando o email...");
-				fluxoEnviaEmailSucesso.executa(novaCompra);
+				featureFlagService.executeIfFeatureEnabled("servico-email", () -> {
+					System.out.println("Enviando o email...");
+					fluxoEnviaEmailSucesso.executa(novaCompra);
+				});
 				return "";
 			});
 			
@@ -199,7 +204,10 @@ public class FluxoRealizacaoCompraCartao {
 			return Result.successWithReturn(new CompraId(novaCompra.getId()));
 		}).ifProblem(Erro500Exception.class, (erro) -> {
 
-			emailsCompra.enviaEmailFalha(novaCompra);
+			featureFlagService.executeIfFeatureEnabled("servico-email", () -> {
+				System.out.println("Enviando o email de falha...");
+				emailsCompra.enviaEmailFalha(novaCompra);
+			});
 
 			// retorna a compra mesmo assim, afinal de contas ela foi criada.
 			return Result.failWithProblem(erro);

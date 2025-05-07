@@ -1,7 +1,9 @@
 package com.deveficiente.desafiocheckouthotmart.compartilhado;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * @param <R>
  */
 public class RoundRobinExecution<T, R> {
-    private final List<Function<T, R>> functions;
+    private final List<Supplier<Optional<Function<T, R>>>> functions;
     private int currentIndex = 0;
     private final ReentrantLock lock = new ReentrantLock();
 	private String contexto;
@@ -25,7 +27,7 @@ public class RoundRobinExecution<T, R> {
 			.getLogger(RoundRobinExecution.class);
 
 
-    public RoundRobinExecution(String contexto,List<Function<T, R>> functions) {
+    public RoundRobinExecution(String contexto,List<Supplier<Optional<Function<T, R>>>> functions) {
         this.contexto = contexto;
         
 		if (functions == null || functions.isEmpty()) {
@@ -34,7 +36,7 @@ public class RoundRobinExecution<T, R> {
         this.functions = functions;
     }
 
-    public Function<T, R> getNextFunction() {
+    public Supplier<Optional<Function<T, R>>> getNextFunction() {
         lock.lock();
         try {
         	//aqui podia ser debug
@@ -45,11 +47,15 @@ public class RoundRobinExecution<T, R> {
         		.adicionaInformacao("indice", currentIndex+"")
         		.info(log);
         	
-            Function<T, R> function = functions.get(currentIndex);
+            Supplier<Optional<Function<T, R>>> function = functions.get(currentIndex);
             currentIndex = (currentIndex + 1) % functions.size();
             return function;
         } finally {
             lock.unlock();
         }
+    }
+
+    public int getNumberOfOptions() {
+        return this.functions.size();
     }
 }

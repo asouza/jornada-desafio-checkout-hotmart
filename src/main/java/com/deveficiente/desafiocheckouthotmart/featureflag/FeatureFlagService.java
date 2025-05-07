@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class FeatureFlagService {
     
@@ -54,6 +56,20 @@ public class FeatureFlagService {
                     .erro(log,e);
             //sendo conservador e retornando false. Aqui poderia ser configurável também. 
             return false;
+        }
+    }
+
+    public <T> Optional<T> optionalizeFeature(String code , T feature) {
+        if(this.isFeatureHabilitada(code)){
+            return Optional.of(feature);
+        }
+
+        return Optional.empty();
+    }
+
+    public void executeIfFeatureEnabled(String code, Runnable runnable) {
+        if(this.isFeatureHabilitada(code)){
+            runnable.run();
         }
     }
 }

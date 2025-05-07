@@ -70,7 +70,7 @@ public class ProximoGatewayPagamento {
 		int limite = roundRobinExecution.getNumberOfOptions();
 
 		//enquanto nao chegou no limite e ainda nao encontrou um gateway disponivel, continua
-		//talvez aqui seja um gargalo de execucao, confesso que neste momento nao sei. 
+		//talvez aqui seja um gargalo de execucao, confesso que neste momento nao sei.
 		while((proximoGateway = roundRobinExecution.getNextFunction().get()).isEmpty() && indiceOpcaoAtual < limite){
 			indiceOpcaoAtual++;
 		}
