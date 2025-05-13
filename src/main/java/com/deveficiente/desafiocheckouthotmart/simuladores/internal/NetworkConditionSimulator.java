@@ -68,11 +68,31 @@ public class NetworkConditionSimulator {
      */
     private static class JitterManager {
         private static final int BASE_JITTER = 25; // ms
-        private static final int MAX_JITTER_VARIATION = 75; // ms
+        private static final int MAX_JITTER_VARIATION = 400; // Aumentado para 400ms
         
         public void simulateJitter() {
             try {
-                int jitterAmount = BASE_JITTER + random.nextInt(MAX_JITTER_VARIATION);
+                // Verifica se é chamada do Gateway 2
+                boolean isGateway2 = false;
+                for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+                    if (element.getClassName().contains("Gateway2")) {
+                        isGateway2 = true;
+                        break;
+                    }
+                }
+                
+                int jitterAmount;
+                if (isGateway2) {
+                    // Gateway 2 tem mais jitter
+                    jitterAmount = BASE_JITTER + random.nextInt(MAX_JITTER_VARIATION * 3);
+                    // 10% das vezes tem jitter muito alto
+                    if (random.nextInt(100) < 10) {
+                        jitterAmount += 2000;
+                    }
+                } else {
+                    jitterAmount = BASE_JITTER + random.nextInt(MAX_JITTER_VARIATION);
+                }
+                
                 Thread.sleep(jitterAmount);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -84,9 +104,20 @@ public class NetworkConditionSimulator {
      * Classe interna que simula perda de pacotes na rede
      */
     private static class PacketLossSimulator {
-        private static final int PACKET_LOSS_PROBABILITY = 3; // 3%
+        private static final int PACKET_LOSS_PROBABILITY = 15; // Aumentado para 15%
+        private static final long lastNetworkIssueTimestamp = System.currentTimeMillis();
         
         public boolean shouldSimulatePacketLoss() {
+            // Introduz mais falhas quando demorado usando o timestamp
+            long currentTime = System.currentTimeMillis();
+            long timeSinceLastIssue = currentTime - lastNetworkIssueTimestamp;
+            
+            // Aumenta chance de problemas para o Gateway 2
+            if (Thread.currentThread().getName().contains("gateway2") || 
+                Thread.currentThread().getStackTrace()[3].toString().contains("gateway2")) {
+                return random.nextInt(100) < PACKET_LOSS_PROBABILITY * 2; // Dobra a probabilidade
+            }
+            
             return random.nextInt(100) < PACKET_LOSS_PROBABILITY;
         }
     }

@@ -61,10 +61,20 @@ public class SimuladorGateway2CartaoController {
     private void preprocessRequest(NovoPagamentoGatewayCartao2Request request) {
         try {
             // Simulação de validação interna do gateway que consome tempo
-            if (random.nextInt(100) < 40) {  // 40% das vezes faz validação pesada
+            int chance = random.nextInt(100);
+            
+            if (chance < 40) {  // 40% das vezes faz validação pesada
                 // Esta parte é difícil de rastrear pois está embutida aqui
                 contentionEmulator.simulateResourceContention();
-                TimeUnit.MILLISECONDS.sleep(300 + random.nextInt(700));
+                // Aumenta o tempo de validação com alto desvio padrão
+                TimeUnit.MILLISECONDS.sleep(500 + random.nextInt(2500));
+            } else if (chance < 60) { // 20% das vezes tem comportamento errático
+                // Introduz comportamento errático onde às vezes responde rápido, às vezes muito lento
+                if (random.nextBoolean()) {
+                    TimeUnit.MILLISECONDS.sleep(10); // Muito rápido
+                } else {
+                    TimeUnit.MILLISECONDS.sleep(4000 + random.nextInt(4000)); // Muito lento
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -72,7 +82,28 @@ public class SimuladorGateway2CartaoController {
     }
     
     private Map<String, Object> executeWithSimulation(NovoPagamentoGatewayCartao2Request paymentRequest) {
-        // Escolhe o modo de simulação baseado na configuração
+        // Introduz falhas aleatórias
+        int randomValue = random.nextInt(100);
+        
+        // 15% de timeout completo
+        if (randomValue < 15) {
+            try {
+                log.warn("Gateway 2 simulando timeout longo");
+                Thread.sleep(31000); // Timeout maior que o padrão de 30s
+                throw new RuntimeException("Timeout Exceeded");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        // 20% de erro 503 Service Unavailable
+        if (randomValue >= 15 && randomValue < 35) {
+            log.error("Gateway 2 retornando erro 503");
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "Gateway temporarily unavailable");
+        }
+        
+        // Escolhe o modo de simulação baseado na configuração para os 65% restantes
         switch (configuration.getMode()) {
             case CHAOS:
                 return simulationOrchestrator.executeChaosOperation(SERVICE_NAME, 
