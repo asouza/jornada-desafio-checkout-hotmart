@@ -42,7 +42,7 @@ public class SimuladorGateway2CartaoController {
     private SimulationConfiguration configuration;
     
     @PostMapping("/payments")
-    public Map<String, Object> executa(@RequestBody NovoPagamentoGatewayCartao2Request paymentRequest) {
+    public String executa(@RequestBody NovoPagamentoGatewayCartao2Request paymentRequest) {
         log.debug("Recebida solicitação de pagamento no gateway2 para cartão: {}*****{}", 
                 paymentRequest.getNumeroCartao().substring(0, 4),
                 paymentRequest.getNumeroCartao().substring(paymentRequest.getNumeroCartao().length() - 4));
@@ -51,7 +51,7 @@ public class SimuladorGateway2CartaoController {
         preprocessRequest(paymentRequest);
         
         // Usa orquestrador para simular comportamento da integração
-        return executeWithSimulation(paymentRequest);
+        return executeWithSimulation(paymentRequest).get("transactionId").toString();
     }
     
     /**
@@ -97,6 +97,7 @@ public class SimuladorGateway2CartaoController {
         response.put("payment_installments", paymentRequest.getNumeroParcelas());
         response.put("provider", "gateway2");
         response.put("timestamp", System.currentTimeMillis());
+        response.put("transactionId", UUID.randomUUID());
         
         // Gateway 2 inclui informações adicionais de processamento
         Map<String, Object> processingDetails = new HashMap<>();
