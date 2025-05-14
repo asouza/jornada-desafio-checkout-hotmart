@@ -13,7 +13,24 @@ public class NovoPagamentoGatewayCartao1Request {
 	private BigDecimal valorParcela;
 	private int numeroParcelas;
 
-	
+
+	/**
+	 * Construtor para ser utilizado pelas apis internas do spring para desserializar a request.
+	 * @param numeroCartao
+	 * @param nomeTitular
+	 * @param mes
+	 * @param anoVencimento
+	 * @param valorParcela
+	 * @param numeroParcelas
+	 */
+	public NovoPagamentoGatewayCartao1Request(String numeroCartao, String nomeTitular, String mes, int anoVencimento, BigDecimal valorParcela, int numeroParcelas) {
+		this.numeroCartao = numeroCartao;
+		this.nomeTitular = nomeTitular;
+		this.mes = mes;
+		this.anoVencimento = anoVencimento;
+		this.valorParcela = valorParcela;
+		this.numeroParcelas = numeroParcelas;
+	}
 
 	public NovoPagamentoGatewayCartao1Request(Compra compra) {
 		

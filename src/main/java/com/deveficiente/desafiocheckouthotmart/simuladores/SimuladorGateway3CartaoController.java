@@ -47,11 +47,11 @@ public class SimuladorGateway3CartaoController {
     private SimulationConfiguration configuration;
     
     @PostMapping("/payments")
-    public Map<String, Object> executa(@RequestBody NovoPagamentoGatewayCartao3Request paymentRequest) {
+    public String executa(@RequestBody NovoPagamentoGatewayCartao3Request paymentRequest) {
         log.debug("Recebida solicitação de pagamento no gateway3");
         
         // Gateway 3 usa processamento assíncrono internamente
-        return processPaymentAsynchronously(paymentRequest);
+        return processPaymentAsynchronously(paymentRequest).get("transactionId").toString();
     }
     
     /**
@@ -133,7 +133,7 @@ public class SimuladorGateway3CartaoController {
         // Cria resposta simulada com formato específico do Gateway 3
         Map<String, Object> response = new HashMap<>();
         String transactionId = UUID.randomUUID().toString();
-        response.put("transaction", transactionId);
+        response.put("transactionId", transactionId);
         response.put("outcome", "approved");
         response.put("authorization", "G3X" + System.currentTimeMillis() % 10000);
         response.put("cardNumber", "****-****-****-" + 

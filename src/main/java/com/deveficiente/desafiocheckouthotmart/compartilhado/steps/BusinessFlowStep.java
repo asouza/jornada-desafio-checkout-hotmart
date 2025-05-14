@@ -25,6 +25,7 @@ public class BusinessFlowStep {
 	@PastOrPresent
 	@NotNull
 	private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(length = 2550)
 	private String executionResult;
 	@NotBlank
 	@Column(unique = true)

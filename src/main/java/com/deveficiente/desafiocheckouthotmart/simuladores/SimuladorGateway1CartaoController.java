@@ -34,11 +34,11 @@ public class SimuladorGateway1CartaoController {
     private SimulationConfiguration configuration;
     
     @PostMapping("/payments")
-    public Map<String, Object> executa(@RequestBody NovoPagamentoGatewayCartao1Request paymentRequest) {
+    public String executa(@RequestBody NovoPagamentoGatewayCartao1Request paymentRequest) {
         log.debug("Recebida solicitação de pagamento no gateway1");
         
         // Utiliza o orquestrador para executar a lógica do simulador com todas as condições realísticas
-        return executeWithSimulation(paymentRequest);
+        return executeWithSimulation(paymentRequest).get("transactionId").toString();
     }
     
     private Map<String, Object> executeWithSimulation(NovoPagamentoGatewayCartao1Request paymentRequest) {
