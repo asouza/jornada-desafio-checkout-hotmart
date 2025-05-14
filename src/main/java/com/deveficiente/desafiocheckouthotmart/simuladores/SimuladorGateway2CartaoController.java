@@ -62,6 +62,7 @@ public class SimuladorGateway2CartaoController {
         try {
             // Simulação de validação interna do gateway que consome tempo
             int chance = random.nextInt(100);
+            log.debug("Gateway2: Chances de acontecer um imprevisto é: "+chance);
             
             if (chance < 40) {  // 40% das vezes faz validação pesada
                 // Esta parte é difícil de rastrear pois está embutida aqui
