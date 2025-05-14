@@ -1,5 +1,6 @@
 package com.deveficiente.desafiocheckouthotmart.simuladores;
 
+import com.deveficiente.desafiocheckouthotmart.simuladores.internal.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -7,10 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-
-import com.deveficiente.desafiocheckouthotmart.simuladores.internal.LoadProfileManager;
-import com.deveficiente.desafiocheckouthotmart.simuladores.internal.SimulationConfiguration;
-import com.deveficiente.desafiocheckouthotmart.simuladores.internal.SimulationOrchestrator;
 
 import jakarta.annotation.PostConstruct;
 

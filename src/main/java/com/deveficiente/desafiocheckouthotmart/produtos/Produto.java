@@ -202,4 +202,13 @@ public class Produto {
 		return id;
 	}
 
+	/**
+	 * Retorna o conjunto de ofertas associadas a este produto.
+	 * 
+	 * @return Um Set contendo as ofertas do produto
+	 */
+	public Set<Oferta> getOfertas() {
+		return this.ofertas;
+	}
+
 }
