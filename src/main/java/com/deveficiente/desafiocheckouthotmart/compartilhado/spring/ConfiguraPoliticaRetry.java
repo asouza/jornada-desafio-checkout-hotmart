@@ -49,15 +49,7 @@ public class ConfiguraPoliticaRetry {
           				  .oQueEstaAcontecendo("Tentativa de retry para chamada http ")		            		  	
           				  .adicionaInformacao("status", feignException.status()+"")
           				  //podia ser debug aqui
-          				  .info(log);	            			
-          				  
-          				  /*
-          				   * Aqui é um experimento tentando implementar a ideia
-          				   * de Token Bucket global para retries. O problema é que o token bucket
-          				   * deveria começar a ser usado depois de um determinado percentual falhar,
-          				   * e não em toda falha.
-          				   */
-          				  circuitBreakerCartao.tryAcquirePermission();
+          				  .info(log);
           				  return true;	            				  
           			  }
           			  
