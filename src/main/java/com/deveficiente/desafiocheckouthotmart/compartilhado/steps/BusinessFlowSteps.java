@@ -35,32 +35,37 @@ public class BusinessFlowSteps {
 
 	public <T> String executeOnlyOnce(String stepName, Supplier<T> logic) {
 
-		Optional<BusinessFlowStep> possibleStep = businessFlowRepository
-				.findStepByName(stepName, currentFlow.getId());
+		//alteracao para não precisar ficar mudando chave de idempotencia
+		//so para facilitar os desafios de troubleshooting
 
-		return
+		return logic.get().toString();
 
-		possibleStep.map(step -> {
-			Log5WBuilder.metodo("executeOnlyOnce")
-					.oQueEstaAcontecendo("Returning previous execution")
-					.adicionaInformacao("stepName", stepName).info(log);
-
-			return step.getExecutionResult();
-		}).orElseGet(() -> {
-
-			return transactionTemplate.execute(status -> {
-				T executionResult = logic.get();
-				/*
-				 * Tava dando pau aqui, ou seja precisa mesmo de um controle de
-				 * estado mínimo para saber que o meu código de flow falhou.
-				 * 
-				 */
-				BusinessFlowEntity renewedFlow = manager.merge(currentFlow);
-				return renewedFlow.registerStep(stepName, executionResult)
-						.getExecutionResult();
-
-			});
-		});
+//		Optional<BusinessFlowStep> possibleStep = businessFlowRepository
+//				.findStepByName(stepName, currentFlow.getId());
+//
+//		return
+//
+//		possibleStep.map(step -> {
+//			Log5WBuilder.metodo("executeOnlyOnce")
+//					.oQueEstaAcontecendo("Returning previous execution")
+//					.adicionaInformacao("stepName", stepName).info(log);
+//
+//			return step.getExecutionResult();
+//		}).orElseGet(() -> {
+//
+//			return transactionTemplate.execute(status -> {
+//				T executionResult = logic.get();
+//				/*
+//				 * Tava dando pau aqui, ou seja precisa mesmo de um controle de
+//				 * estado mínimo para saber que o meu código de flow falhou.
+//				 *
+//				 */
+//				BusinessFlowEntity renewedFlow = manager.merge(currentFlow);
+//				return renewedFlow.registerStep(stepName, executionResult)
+//						.getExecutionResult();
+//
+//			});
+//		});
 
 	}
 
