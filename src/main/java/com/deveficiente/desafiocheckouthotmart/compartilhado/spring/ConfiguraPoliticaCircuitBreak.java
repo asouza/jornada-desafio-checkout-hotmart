@@ -30,7 +30,7 @@ public class ConfiguraPoliticaCircuitBreak {
 				  .permittedNumberOfCallsInHalfOpenState(4)
 				  .minimumNumberOfCalls(10)
 				  .slidingWindowType(SlidingWindowType.COUNT_BASED)
-				  .slidingWindowSize(2)
+				  .slidingWindowSize(200)
 				  .recordException(e -> {
 					  if(e instanceof FeignException) {
 						  FeignException feignException = (FeignException) e;

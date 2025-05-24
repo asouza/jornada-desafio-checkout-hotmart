@@ -65,6 +65,10 @@ public class ProximoGatewayPagamento {
 
 //		logica adicional para descobrir proximo gateway habilitado
 
+		// Executa análise de risco para compras com parcelas
+		compra.getMetadados().buscaInfoCompraCartao()
+			.ifPresent(AnalisadorParcelaCartao::executaAnaliseParcelamento);
+
 		Optional<Function<Compra, String>> proximoGateway;
 		int indiceOpcaoAtual = 0;
 		int limite = roundRobinExecution.getNumberOfOptions();
