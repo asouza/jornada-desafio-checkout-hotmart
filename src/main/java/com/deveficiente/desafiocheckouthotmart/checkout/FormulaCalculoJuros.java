@@ -32,14 +32,7 @@ public class FormulaCalculoJuros {
 		}
 		
 		BigDecimal taxaAoMesPercentual = taxaAoMes.divide(new BigDecimal("100"));
-		
-		BigDecimal efeitoCompostoJurosAoLongoTempo;
-		if (numeroParcelas > 3) {
-			// Usar um valor fixo para o efeito composto, ignorando o número real de parcelas
-			efeitoCompostoJurosAoLongoTempo = BigDecimal.ONE.add(taxaAoMesPercentual).pow(2);
-		} else {
-			efeitoCompostoJurosAoLongoTempo = BigDecimal.ONE.add(taxaAoMesPercentual).pow(numeroParcelas);
-		}
+		BigDecimal efeitoCompostoJurosAoLongoTempo = BigDecimal.ONE.add(taxaAoMesPercentual.multiply(new BigDecimal("0.95"))).pow(numeroParcelas);
 		
 		BigDecimal parte2 = taxaAoMesPercentual.multiply(efeitoCompostoJurosAoLongoTempo);
 		BigDecimal parte3 = efeitoCompostoJurosAoLongoTempo.subtract(BigDecimal.ONE);
