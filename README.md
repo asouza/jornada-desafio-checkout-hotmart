@@ -25,11 +25,16 @@ curl -X POST http://localhost:8080/checkouts/produtos/{codigoProduto}/{codigoOfe
   -d '{
     "email": "comprador@email.com",
     "dadosCartao": {
-      "numero": "4111111111111111",
-      "titular": "João Silva",
-      "mesVencimento": 12,
+      "numeroCartao": "4111111111111111",
+      "nomeTitular": "João Silva",
+      "mes": 12,
       "anoVencimento": 2025,
-      "codigoSeguranca": "123"
+      "numeroParcelas": "123"
+    },
+    "infoPadrao": {
+      "nomeCompleto": "nome aqui",
+      "email": "email aqui",
+      "confirmacaoEmail": "confirmacao email aqui"      
     }
   }'
 ```
